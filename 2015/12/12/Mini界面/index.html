@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+    
+
+    <title>
+      Mini界面 | DraftNote 
+    </title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    
+      <meta name="author" content="HeartJ Jiang">
+    
+    
+
+    <meta name="description" content="迷你界面在鼠标选中文本框时（按下鼠标，拖拽，选中文本框）会自动弹出Mini界面包含如下操作  
+设置字体Mini界面中的字体设置与主操作界面的字体设置功能一致，除了设置单一文本框外，还可以批量设置字体  
+设置字号Mini界面中的字号设置与主操作界面的字号设置功能一致，除了设置单一文本框外，还可以批量设置字号  
+快捷设置Mini界面中的快捷设置与主操作界面的快捷设置功能一致，除了设置单一文本框外">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Mini界面 | DraftNote">
+<meta property="og:url" content="http://mysoftware.me/2015/12/12/Mini界面/index.html">
+<meta property="og:site_name" content="DraftNote">
+<meta property="og:description" content="迷你界面在鼠标选中文本框时（按下鼠标，拖拽，选中文本框）会自动弹出Mini界面包含如下操作  
+设置字体Mini界面中的字体设置与主操作界面的字体设置功能一致，除了设置单一文本框外，还可以批量设置字体  
+设置字号Mini界面中的字号设置与主操作界面的字号设置功能一致，除了设置单一文本框外，还可以批量设置字号  
+快捷设置Mini界面中的快捷设置与主操作界面的快捷设置功能一致，除了设置单一文本框外">
+<meta property="og:image" content="http://mysoftware.me/images/mini-select.png">
+<meta property="og:image" content="http://mysoftware.me/images/mini-info.png">
+<meta property="og:image" content="http://mysoftware.me/images/mini-font.png">
+<meta property="og:image" content="http://mysoftware.me/images/mini-fontsize.png">
+<meta property="og:image" content="http://mysoftware.me/images/mini-shotcut.png">
+<meta property="og:image" content="http://mysoftware.me/images/mini-del.png">
+<meta property="og:image" content="http://mysoftware.me/images/mini-color.png">
+<meta property="og:image" content="http://mysoftware.me/images/mini-bgcolor.png">
+<meta property="og:updated_time" content="2015-12-12T11:40:42.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Mini界面 | DraftNote">
+<meta name="twitter:description" content="迷你界面在鼠标选中文本框时（按下鼠标，拖拽，选中文本框）会自动弹出Mini界面包含如下操作  
+设置字体Mini界面中的字体设置与主操作界面的字体设置功能一致，除了设置单一文本框外，还可以批量设置字体  
+设置字号Mini界面中的字号设置与主操作界面的字号设置功能一致，除了设置单一文本框外，还可以批量设置字号  
+快捷设置Mini界面中的快捷设置与主操作界面的快捷设置功能一致，除了设置单一文本框外">
+    
+    
+    
+      <link rel="icon" type="image/x-icon" href="/favicon.png">
+    
+    <link rel="stylesheet" href="/css/uno.css" type="text/css">
+    <link rel="stylesheet" href="/css/highlight.css" type="text/css">
+    <link rel="stylesheet" href="/css/archive.css" type="text/css">
+
+</head>
+<body>
+
+    <span class="mobile btn-mobile-menu">
+        <i class="icon icon-list btn-mobile-menu__icon"></i>
+        <i class="icon icon-x-circle btn-mobile-close__icon hidden"></i>
+    </span>
+
+    
+
+<header class="panel-cover panel-cover--collapsed">
+
+
+  <div class="panel-main">
+
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+
+        
+
+        <h1 class="panel-cover__title panel-title"><a href="/" title="link to homepage">DraftNote</a></h1>
+        <hr class="panel-cover__divider" />
+
+        
+
+        <div class="navigation-wrapper">
+
+          <nav class="cover-navigation cover-navigation--primary">
+            <ul class="navigation">
+
+              
+                
+                <li class="navigation__item"><a href="/#blog" title="" class="blog-button">首页</a></li>
+              
+                
+                <li class="navigation__item"><a href="/about" title="" class="">关于</a></li>
+              
+                
+                <li class="navigation__item"><a href="/archive" title="" class="">归档</a></li>
+              
+
+            </ul>
+          </nav>
+
+          <!-- ----------------------------
+To add a new social icon simply duplicate one of the list items from below
+and change the class in the <i> tag to match the desired social network
+and then add your link to the <a>. Here is a full list of social network
+classes that you can use:
+
+    icon-social-500px
+    icon-social-behance
+    icon-social-delicious
+    icon-social-designer-news
+    icon-social-deviant-art
+    icon-social-digg
+    icon-social-dribbble
+    icon-social-facebook
+    icon-social-flickr
+    icon-social-forrst
+    icon-social-foursquare
+    icon-social-github
+    icon-social-google-plus
+    icon-social-hi5
+    icon-social-instagram
+    icon-social-lastfm
+    icon-social-linkedin
+    icon-social-medium
+    icon-social-myspace
+    icon-social-path
+    icon-social-pinterest
+    icon-social-rdio
+    icon-social-reddit
+    icon-social-skype
+    icon-social-spotify
+    icon-social-stack-overflow
+    icon-social-steam
+    icon-social-stumbleupon
+    icon-social-treehouse
+    icon-social-tumblr
+    icon-social-twitter
+    icon-social-vimeo
+    icon-social-xbox
+    icon-social-yelp
+    icon-social-youtube
+    icon-social-zerply
+    icon-mail
+
+-------------------------------->
+
+<!-- add social info here -->
+
+
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="panel-cover--overlay"></div>
+  </div>
+</header>
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner entry">
+            
+
+<article class="post-container post-container--single">
+
+  <header class="post-header">
+    
+    <h1 class="post-title">Mini界面</h1>
+
+    
+
+    <div class="post-meta">
+      <time datetime="2015-12-12" class="post-meta__date date">2015-12-12</time> 
+
+      <span class="post-meta__tags tags">
+
+          
+
+          
+             &#8226; 标签:
+            <font class="tags">
+              <a class="tags-link" href="/tags/Mni-迷你-Font-Color/">Mni 迷你 Font Color</a>
+            </font>
+          
+
+      </span>
+    </div>
+    
+    
+
+  </header>
+
+  <section id="post-content" class="article-content post">
+    <p>迷你界面在鼠标选中文本框时（按下鼠标，拖拽，选中文本框）会自动弹出<br><img src="/images/mini-select.png" alt="miniSelect"><br>Mini界面包含如下操作<br><img src="/images/mini-info.png" alt="miniInfo">  </p>
+<h3 id="设置字体">设置字体</h3><p>Mini界面中的字体设置与主操作界面的字体设置功能一致，除了设置单一文本框外，还可以批量设置字体<br><img src="/images/mini-font.png" alt="MiniFont">  </p>
+<h3 id="设置字号">设置字号</h3><p>Mini界面中的字号设置与主操作界面的字号设置功能一致，除了设置单一文本框外，还可以批量设置字号<br><img src="/images/mini-fontsize.png" alt="MiniFontSize">  </p>
+<h3 id="快捷设置">快捷设置</h3><p>Mini界面中的快捷设置与主操作界面的快捷设置功能一致，除了设置单一文本框外，还可以批量设置<br><img src="/images/mini-shotcut.png" alt="MiniShotCut">  </p>
+<h3 id="删除">删除</h3><p>Mini界面提供了删除文本框的功能，可以批量删除文本框。下图中会删除选中的两个文本框<br><img src="/images/mini-del.png" alt="MiniDel">  </p>
+<h3 id="前景色">前景色</h3><p>Mini界面提供设置前景色的功能与主操作界面的前景色设置功能一致，除了设置单一文本框外，还可以批量设置字体前景色<br><img src="/images/mini-color.png" alt="MiniColor">  </p>
+<h3 id="背景色">背景色</h3><p>Mini界面提供设置背景色的功能与主操作界面的背景色设置功能一致，除了设置单一文本框外，还可以批量设置字体背景色<br><img src="/images/mini-bgcolor.png" alt="MiniBgColor">  </p>
+<h3 id="粗体、倾斜、下划线、删除线">粗体、倾斜、下划线、删除线</h3><p>Mini界面中设置粗体、倾斜、下划线、删除线的功能与主操作界面的功能一致，除了设置单一文本框外，还可以批量设置  </p>
+<p><strong><em>您可以前往</em></strong><br><a href="/2015/12/06/编辑/">编辑</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="/2015/12/06/插入/">插入</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="/2015/12/06/绘图/">绘图</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="/2015/12/11/其他/">其他</a></p>
+
+  </section>
+
+  
+  
+</article>
+
+
+            <footer class="footer">
+
+    <span class="footer__copyright">&copy; 2014-2015. | 由<a href="https://hexo.io/">Hexo</a>强力驱动 | 主题<a href="https://github.com/someus/huno">Huno</a></span>
+    
+</footer>
+        </div>
+    </div>
+
+    <!-- js files -->
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/scale.fix.js"></script>
+    
+
+    
+
+    <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript"> 
+        $(document).ready(function(){
+            MathJax.Hub.Config({ 
+                tex2jax: {inlineMath: [['[latex]','[/latex]'], ['\\(','\\)']]} 
+            });
+        });
+    </script>
+
+
+    
+
+    <script src="/js/awesome-toc.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            $.awesome_toc({
+                overlay: true,
+                contentId: "post-content",
+            });
+        });
+    </script>
+
+
+    
+    
+    <!--kill ie6 -->
+<!--[if IE 6]>
+  <script src="//letskillie6.googlecode.com/svn/trunk/2/zh_CN.js"></script>
+<![endif]-->
+
+</body>
+</html>
