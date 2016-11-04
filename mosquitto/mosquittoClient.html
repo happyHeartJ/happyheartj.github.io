@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+    
+
+    <title>
+      mosquittoClient 
+    </title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    
+      <meta name="author" content="HeartJ Jiang">
+    
+    
+
+    <meta name="description" content="mosquitto附带的client分析sub_client1234567891011121314151617int main(int argc, char *argv[])&amp;#123;	struct mosq_config cfg;	struct mosquitto *mosq = NULL;	int rc;		rc = client_config_load(&amp;amp;cfg, CLIENT_S">
+<meta property="og:type" content="website">
+<meta property="og:title" content="mosquittoClient">
+<meta property="og:url" content="http://mycreation.tech/mosquitto/mosquittoClient.html">
+<meta property="og:site_name" content="My Software">
+<meta property="og:description" content="mosquitto附带的client分析sub_client1234567891011121314151617int main(int argc, char *argv[])&amp;#123;	struct mosq_config cfg;	struct mosquitto *mosq = NULL;	int rc;		rc = client_config_load(&amp;amp;cfg, CLIENT_S">
+<meta property="og:updated_time" content="2016-11-04T15:12:05.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="mosquittoClient">
+<meta name="twitter:description" content="mosquitto附带的client分析sub_client1234567891011121314151617int main(int argc, char *argv[])&amp;#123;	struct mosq_config cfg;	struct mosquitto *mosq = NULL;	int rc;		rc = client_config_load(&amp;amp;cfg, CLIENT_S">
+    
+    
+    
+      <link rel="icon" type="image/x-icon" href="/favicon.png">
+    
+    <link rel="stylesheet" href="/css/uno.css" type="text/css">
+    <link rel="stylesheet" href="/css/highlight.css" type="text/css">
+    <link rel="stylesheet" href="/css/archive.css" type="text/css">
+
+</head>
+<body>
+
+    <span class="mobile btn-mobile-menu">
+        <i class="icon icon-list btn-mobile-menu__icon"></i>
+        <i class="icon icon-x-circle btn-mobile-close__icon hidden"></i>
+    </span>
+
+    
+
+<header class="panel-cover panel-cover--collapsed">
+
+
+  <div class="panel-main">
+
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+
+        
+
+        <h1 class="panel-cover__title panel-title"><a href="/" title="link to homepage">My Software</a></h1>
+        <hr class="panel-cover__divider" />
+
+        
+
+        <div class="navigation-wrapper">
+
+          <nav class="cover-navigation cover-navigation--primary">
+            <ul class="navigation">
+
+              
+                
+                <li class="navigation__item"><a href="/" title="" class="">首页</a></li>
+              
+                
+                <li class="navigation__item"><a href="/DraftNote" title="" class="">Draftnote</a></li>
+              
+                
+                <li class="navigation__item"><a href="/reminder" title="" class="">Reminder</a></li>
+              
+                
+                <li class="navigation__item"><a href="/mosquitto" title="" class="">mosquitto</a></li>
+              
+                
+                <li class="navigation__item"><a href="/#blog" title="" class="blog-button">碎碎念</a></li>
+              
+                
+                <li class="navigation__item"><a href="/archive" title="" class="">归档</a></li>
+              
+                
+                <li class="navigation__item"><a href="/about" title="" class="">关于</a></li>
+              
+
+            </ul>
+          </nav>
+
+          <!-- ----------------------------
+To add a new social icon simply duplicate one of the list items from below
+and change the class in the <i> tag to match the desired social network
+and then add your link to the <a>. Here is a full list of social network
+classes that you can use:
+
+    icon-social-500px
+    icon-social-behance
+    icon-social-delicious
+    icon-social-designer-news
+    icon-social-deviant-art
+    icon-social-digg
+    icon-social-dribbble
+    icon-social-facebook
+    icon-social-flickr
+    icon-social-forrst
+    icon-social-foursquare
+    icon-social-github
+    icon-social-google-plus
+    icon-social-hi5
+    icon-social-instagram
+    icon-social-lastfm
+    icon-social-linkedin
+    icon-social-medium
+    icon-social-myspace
+    icon-social-path
+    icon-social-pinterest
+    icon-social-rdio
+    icon-social-reddit
+    icon-social-skype
+    icon-social-spotify
+    icon-social-stack-overflow
+    icon-social-steam
+    icon-social-stumbleupon
+    icon-social-treehouse
+    icon-social-tumblr
+    icon-social-twitter
+    icon-social-vimeo
+    icon-social-xbox
+    icon-social-yelp
+    icon-social-youtube
+    icon-social-zerply
+    icon-mail
+
+-------------------------------->
+
+<!-- add social info here -->
+
+
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="panel-cover--overlay"></div>
+  </div>
+</header>
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner entry">
+            
+
+<article class="post-container post-container--single">
+
+  <header class="post-header">
+    
+    <h1 class="post-title">mosquittoClient</h1>
+
+    
+
+  </header>
+
+  <section id="post-content" class="article-content post">
+    <h1 id="mosquitto附带的client分析">mosquitto附带的client分析</h1><h2 id="sub_client">sub_client</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span><br><span class="line"></span>&#123;</span><br><span class="line">	<span class="keyword">struct</span> mosq_config cfg;</span><br><span class="line">	<span class="keyword">struct</span> mosquitto *mosq = <span class="literal">NULL</span>;</span><br><span class="line">	<span class="keyword">int</span> rc;</span><br><span class="line">	</span><br><span class="line">	rc = client_config_load(&amp;cfg, CLIENT_SUB, argc, argv);</span><br><span class="line">	<span class="keyword">if</span>(rc)&#123;</span><br><span class="line">		client_config_cleanup(&amp;cfg);</span><br><span class="line">		<span class="keyword">if</span>(rc == <span class="number">2</span>)&#123;</span><br><span class="line">			<span class="comment">/* --help */</span></span><br><span class="line">			print_usage();</span><br><span class="line">		&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">			<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"\nUse 'mosquitto_sub --help' to see usage.\n"</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+<p>这部分主要是声明一些程序运行所需的局部变量，调用<strong>client_config_load</strong>来设置配置参数<strong>cfg</strong>。<br><strong>client_config_load</strong>会尝试读取本地的配置文件，如果没有会为<strong>cfg</strong>创建参数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mosquitto_lib_init();</span><br></pre></td></tr></table></figure>
+<p>初始化，内部调用<strong>_mosquitto_net_init()</strong>来初始化网络环境（包括SRV和TSL等）<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(client_id_generate(&amp;cfg, <span class="string">"mosqsub"</span>))&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>为<strong>cfg</strong>创建id参数。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">mosq = mosquitto_new(cfg.id, cfg.clean_session, &amp;cfg);</span><br><span class="line"><span class="keyword">if</span>(!mosq)&#123;</span><br><span class="line">	<span class="keyword">switch</span>(errno)&#123;</span><br><span class="line">		<span class="keyword">case</span> ENOMEM:</span><br><span class="line">			<span class="keyword">if</span>(!cfg.quiet) <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Error: Out of memory.\n"</span>);</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> EINVAL:</span><br><span class="line">			<span class="keyword">if</span>(!cfg.quiet) <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Error: Invalid id and/or clean_session.\n"</span>);</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	mosquitto_lib_cleanup();</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span>(client_opts_set(mosq, &amp;cfg))&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>创建mosquitto客户端。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(cfg.debug)&#123;</span><br><span class="line">	mosquitto_log_callback_set(mosq, my_log_callback);</span><br><span class="line">	mosquitto_subscribe_callback_set(mosq, my_subscribe_callback);</span><br><span class="line">&#125;</span><br><span class="line">mosquitto_connect_callback_set(mosq, my_connect_callback);</span><br><span class="line">mosquitto_message_callback_set(mosq, my_message_callback);</span><br></pre></td></tr></table></figure></p>
+<p>设置回调函数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rc = client_connect(mosq, &amp;cfg);</span><br><span class="line"><span class="keyword">if</span>(rc) <span class="keyword">return</span> rc;</span><br></pre></td></tr></table></figure>
+<p>启动网络连接。内部调用<strong>mosquitto_connect_bind</strong>来完成连接，在<strong>mosquitto_connect_bind</strong>内部，会继续调用<strong>_mosquitto_connect_init</strong>来设置<strong>host</strong>、<strong>port</strong>、<strong>keeplive</strong>等参数。随后，调用<strong>_mosquitto_reconnect</strong>来进行连接broker，内部调用<strong>_mosquitto_socket_connect</strong>，再深入调用<strong>_mosquitto_try_connect</strong>，在这里完成soket的创建，TCP协议指定、地址绑定，连接服务器的操作。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rc = mosquitto_loop_forever(mosq, -<span class="number">1</span>, <span class="number">1</span>);</span><br></pre></td></tr></table></figure></p>
+<p>启动消息循环，这是一个永久阻塞的循环。因为在sub_client这个demo中，只是一个MQTT的client，所以可以使用<strong>mosquitto_loop_forever</strong>来启动消息循环。<br><strong>mosquitto_loop_forever</strong>在线程中调用<strong>mosquitto_loop_forever</strong>来处理数据收发；<br><strong>注意：需要打开预编译WITH_THREADING；</strong><br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">	mosquitto_destroy(mosq);</span><br><span class="line">	mosquitto_lib_cleanup();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span>(cfg.msg_count&gt;<span class="number">0</span> &amp;&amp; rc == MOSQ_ERR_NO_CONN)&#123;</span><br><span class="line">		rc = <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span>(rc)&#123;</span><br><span class="line">		<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Error: %s\n"</span>, mosquitto_strerror(rc));</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>释放，退出。</p>
+<h2 id="pub_client">pub_client</h2><p>与sub_client略有不同，pub_client要处理输入指令，稍微复杂些。</p>
+<p>在main函数前，声明了一些全局变量<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">char</span> *topic = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">char</span> *message = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">long</span> msglen = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> qos = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> retain = <span class="number">0</span>;<span class="comment">//default is 0</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> mode = MSGMODE_NONE;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> status = STATUS_CONNECTING;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> mid_sent = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> last_mid = -<span class="number">1</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> last_mid_sent = -<span class="number">1</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">bool</span> connected = <span class="literal">true</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">char</span> *username = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">char</span> *password = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">bool</span> disconnect_sent = <span class="literal">false</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">bool</span> quiet = <span class="literal">false</span>;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span><br><span class="line"></span>&#123;</span><br><span class="line">	<span class="keyword">struct</span> mosq_config cfg;</span><br><span class="line">	<span class="keyword">struct</span> mosquitto *mosq = <span class="literal">NULL</span>;</span><br><span class="line">	<span class="keyword">int</span> rc;</span><br><span class="line">	<span class="keyword">int</span> rc2;</span><br><span class="line">	<span class="keyword">char</span> *buf;</span><br><span class="line">	<span class="keyword">int</span> buf_len = <span class="number">1024</span>;</span><br><span class="line">	<span class="keyword">int</span> buf_len_actual;</span><br><span class="line">	<span class="keyword">int</span> read_len;</span><br><span class="line">	<span class="keyword">int</span> pos;</span><br><span class="line"></span><br><span class="line">	buf = <span class="built_in">malloc</span>(buf_len);</span><br><span class="line">	<span class="keyword">if</span>(!buf)&#123;</span><br><span class="line">		<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Error: Out of memory.\n"</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">memset</span>(&amp;cfg, <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="keyword">struct</span> mosq_config));</span><br><span class="line">	rc = client_config_load(&amp;cfg, CLIENT_PUB, argc, argv);</span><br><span class="line">	<span class="keyword">if</span>(rc)&#123;</span><br><span class="line">		client_config_cleanup(&amp;cfg);</span><br><span class="line">		<span class="keyword">if</span>(rc == <span class="number">2</span>)&#123;</span><br><span class="line">			<span class="comment">/* --help */</span></span><br><span class="line">			print_usage();</span><br><span class="line">		&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">			<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"\nUse 'mosquitto_pub --help' to see usage.\n"</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+<p>创建局部变量，初始化配置参数<strong>cfg</strong>。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">topic = cfg.topic;</span><br><span class="line">message = cfg.message;</span><br><span class="line">msglen = cfg.msglen;</span><br><span class="line">qos = cfg.qos;</span><br><span class="line">retain = cfg.retain;</span><br><span class="line">mode = cfg.pub_mode;</span><br><span class="line">username = cfg.username;</span><br><span class="line">password = cfg.password;</span><br><span class="line">quiet = cfg.quiet;</span><br></pre></td></tr></table></figure>
+<p>使用初始化的参数为全局变量赋值。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(cfg.pub_mode == MSGMODE_STDIN_FILE)&#123;</span><br><span class="line">	<span class="keyword">if</span>(load_stdin())&#123;</span><br><span class="line">		<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Error loading input from stdin.\n"</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;<span class="keyword">else</span> <span class="keyword">if</span>(cfg.file_input)&#123;</span><br><span class="line">	<span class="keyword">if</span>(load_file(cfg.file_input))&#123;</span><br><span class="line">		<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Error loading input file \"%s\".\n"</span>, cfg.file_input);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(!topic || mode == MSGMODE_NONE)&#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Error: Both topic and message must be supplied.\n"</span>);</span><br><span class="line">	print_usage();</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里会判断当前发送的消息的模式，定义如下，</p>
+<ul>
+<li>define MSGMODE_NONE 0</li>
+<li>define MSGMODE_CMD 1</li>
+<li>define MSGMODE_STDIN_LINE 2</li>
+<li>define MSGMODE_STDIN_FILE 3</li>
+<li>define MSGMODE_FILE 4</li>
+<li>define MSGMODE_NULL 5</li>
+</ul>
+<p>此处是用的是<strong>MSGMODE_CMD</strong>，从命令行获取<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">mosquitto_lib_init();</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(client_id_generate(&amp;cfg, <span class="string">"mosqpub"</span>))&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">mosq = mosquitto_new(cfg.id, <span class="literal">true</span>, <span class="literal">NULL</span>);</span><br><span class="line"><span class="keyword">if</span>(!mosq)&#123;</span><br><span class="line">	<span class="keyword">switch</span>(errno)&#123;</span><br><span class="line">		<span class="keyword">case</span> ENOMEM:</span><br><span class="line">			<span class="keyword">if</span>(!quiet) <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Error: Out of memory.\n"</span>);</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> EINVAL:</span><br><span class="line">			<span class="keyword">if</span>(!quiet) <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Error: Invalid id.\n"</span>);</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	mosquitto_lib_cleanup();</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span>(cfg.debug)&#123;</span><br><span class="line">	mosquitto_log_callback_set(mosq, my_log_callback);</span><br><span class="line">&#125;</span><br><span class="line">mosquitto_connect_callback_set(mosq, my_connect_callback);</span><br><span class="line">mosquitto_disconnect_callback_set(mosq, my_disconnect_callback);</span><br><span class="line">mosquitto_publish_callback_set(mosq, my_publish_callback);</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(client_opts_set(mosq, &amp;cfg))&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line">rc = client_connect(mosq, &amp;cfg);</span><br><span class="line"><span class="keyword">if</span>(rc) <span class="keyword">return</span> rc;</span><br></pre></td></tr></table></figure></p>
+<p>这里和sub_client相同。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(mode == MSGMODE_STDIN_LINE)&#123;</span><br><span class="line">	mosquitto_loop_start(mosq);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>如果当前是<strong>MSGMODE_STDIN_LINE</strong>模式，则调用<strong>mosquitto_loop_start</strong>开启一个单独的线程来处理网络传输。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line">	<span class="keyword">do</span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(mode == MSGMODE_STDIN_LINE)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="keyword">if</span>(status == STATUS_CONNACK_RECVD)</span><br><span class="line">			&#123;</span><br><span class="line">				pos = <span class="number">0</span>;</span><br><span class="line">				read_len = buf_len;</span><br><span class="line">				<span class="keyword">while</span>(fgets(&amp;buf[pos], read_len, <span class="built_in">stdin</span>))</span><br><span class="line">				&#123;</span><br><span class="line">					buf_len_actual = <span class="built_in">strlen</span>(buf);</span><br><span class="line">					<span class="keyword">if</span>(buf[buf_len_actual-<span class="number">1</span>] == <span class="string">'\n'</span>)</span><br><span class="line">					&#123;</span><br><span class="line">						buf[buf_len_actual-<span class="number">1</span>] = <span class="string">'\0'</span>;</span><br><span class="line">						rc2 = mosquitto_publish(mosq, &amp;mid_sent, topic, buf_len_actual-<span class="number">1</span>, buf, qos, retain);</span><br><span class="line">						<span class="keyword">if</span>(rc2)</span><br><span class="line">						&#123;</span><br><span class="line">							<span class="keyword">if</span>(!quiet)</span><br><span class="line">							&#123;</span><br><span class="line">							    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Error: Publish returned %d, disconnecting.\n"</span>, rc2);</span><br><span class="line">							 &#125;</span><br><span class="line">							mosquitto_disconnect(mosq);</span><br><span class="line">						&#125;</span><br><span class="line">						<span class="keyword">break</span>;</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="keyword">else</span></span><br><span class="line">					&#123;</span><br><span class="line">						buf_len += <span class="number">1024</span>;</span><br><span class="line">						pos += <span class="number">1023</span>;</span><br><span class="line">						read_len = <span class="number">1024</span>;</span><br><span class="line">						buf = <span class="built_in">realloc</span>(buf, buf_len);</span><br><span class="line">						<span class="keyword">if</span>(!buf)</span><br><span class="line">						&#123;</span><br><span class="line">							<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Error: Out of memory.\n"</span>);</span><br><span class="line">							<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">						&#125;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">if</span>(feof(<span class="built_in">stdin</span>))</span><br><span class="line">				&#123;</span><br><span class="line">					last_mid = mid_sent;</span><br><span class="line">					status = STATUS_WAITING;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span>(status == STATUS_WAITING)</span><br><span class="line">			&#123;</span><br><span class="line">				<span class="keyword">if</span>(last_mid_sent == last_mid &amp;&amp; disconnect_sent == <span class="literal">false</span>)</span><br><span class="line">				&#123;</span><br><span class="line">					mosquitto_disconnect(mosq);</span><br><span class="line">					disconnect_sent = <span class="literal">true</span>;</span><br><span class="line">				&#125;</span><br><span class="line"><span class="preprocessor">#<span class="keyword">ifdef</span> WIN32</span></span><br><span class="line">				Sleep(<span class="number">100</span>);</span><br><span class="line"><span class="preprocessor">#<span class="keyword">else</span></span></span><br><span class="line">				usleep(<span class="number">100000</span>);</span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line">			&#125;</span><br><span class="line">			rc = MOSQ_ERR_SUCCESS;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span></span><br><span class="line">		&#123;</span><br><span class="line">			rc = mosquitto_loop(mosq, -<span class="number">1</span>, <span class="number">1</span>);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;<span class="keyword">while</span>(rc == MOSQ_ERR_SUCCESS &amp;&amp; connected);</span><br></pre></td></tr></table></figure></p>
+<p>这里会根据当前的模式来启动消息循环，由于使用的是<strong>MSGMODE_CMD</strong>模式，所以会调用<strong>mosquitto_loop</strong>来启动循环。当接收到broker发送的CONNACK消息后，调用连接回调函数，回调函数中使用<strong>mosquitto_publish</strong>接口发布消息。<br><strong>mosquitto_loop</strong>使用select方式来处理socket的接收和发送。将<strong>mosquitto</strong>实例中的<strong>sock</strong>放入两个<strong>fd_set</strong>，分别代表读和写。再将<strong>sockpairR</strong>也放入<strong>读fd_set</strong>中。<strong>sockpairR</strong>用来在select()超时前跳出select()，与之对应的有<strong>sockpairW</strong>，将<strong>sockpairW</strong>放入<strong>写fd_set</strong>中。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">	<span class="keyword">if</span>(mode == MSGMODE_STDIN_LINE)&#123;</span><br><span class="line">		mosquitto_loop_stop(mosq, <span class="literal">false</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span>(message &amp;&amp; mode == MSGMODE_FILE)&#123;</span><br><span class="line">		<span class="built_in">free</span>(message);</span><br><span class="line">	&#125;</span><br><span class="line">	mosquitto_destroy(mosq);</span><br><span class="line">	mosquitto_lib_cleanup();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span>(rc)&#123;</span><br><span class="line">		<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Error: %s\n"</span>, mosquitto_strerror(rc));</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>释放，退出。</p>
+
+  </section>
+
+  
+  
+</article>
+
+
+            <footer class="footer">
+
+    <span class="footer__copyright">&copy; 2014-2015. | 由<a href="https://hexo.io/">Hexo</a>强力驱动 | 主题<a href="https://github.com/someus/huno">Huno</a></span>
+    
+</footer>
+        </div>
+    </div>
+
+    <!-- js files -->
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/scale.fix.js"></script>
+    
+
+    
+
+    <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript"> 
+        $(document).ready(function(){
+            MathJax.Hub.Config({ 
+                tex2jax: {inlineMath: [['[latex]','[/latex]'], ['\\(','\\)']]} 
+            });
+        });
+    </script>
+
+
+    
+    
+    
+    <!--kill ie6 -->
+<!--[if IE 6]>
+  <script src="//letskillie6.googlecode.com/svn/trunk/2/zh_CN.js"></script>
+<![endif]-->
+
+</body>
+</html>

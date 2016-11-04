@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+    
+
+    <title>
+      mosquittoModuileInfo 
+    </title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    
+      <meta name="author" content="HeartJ Jiang">
+    
+    
+
+    <meta name="description" content="mosquitto模块分析概述libmosquitto 作为 mosquitto 开源代码的一部分，主要用来实现 MQTT 协议栈和数据包通讯功能。下面将对libmosquitto包含的模块进行简要介绍（mosquitto模块参考mosquitto模块）。
+
+mosquitto_internal.hmosquitto_internal.h 中定义了使用的数据结构。包含下列内容：
+
+enum枚举值">
+<meta property="og:type" content="website">
+<meta property="og:title" content="mosquittoModuileInfo">
+<meta property="og:url" content="http://mycreation.tech/mosquitto/mosquittoModuileInfo.html">
+<meta property="og:site_name" content="My Software">
+<meta property="og:description" content="mosquitto模块分析概述libmosquitto 作为 mosquitto 开源代码的一部分，主要用来实现 MQTT 协议栈和数据包通讯功能。下面将对libmosquitto包含的模块进行简要介绍（mosquitto模块参考mosquitto模块）。
+
+mosquitto_internal.hmosquitto_internal.h 中定义了使用的数据结构。包含下列内容：
+
+enum枚举值">
+<meta property="og:updated_time" content="2016-11-04T15:04:19.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="mosquittoModuileInfo">
+<meta name="twitter:description" content="mosquitto模块分析概述libmosquitto 作为 mosquitto 开源代码的一部分，主要用来实现 MQTT 协议栈和数据包通讯功能。下面将对libmosquitto包含的模块进行简要介绍（mosquitto模块参考mosquitto模块）。
+
+mosquitto_internal.hmosquitto_internal.h 中定义了使用的数据结构。包含下列内容：
+
+enum枚举值">
+    
+    
+    
+      <link rel="icon" type="image/x-icon" href="/favicon.png">
+    
+    <link rel="stylesheet" href="/css/uno.css" type="text/css">
+    <link rel="stylesheet" href="/css/highlight.css" type="text/css">
+    <link rel="stylesheet" href="/css/archive.css" type="text/css">
+
+</head>
+<body>
+
+    <span class="mobile btn-mobile-menu">
+        <i class="icon icon-list btn-mobile-menu__icon"></i>
+        <i class="icon icon-x-circle btn-mobile-close__icon hidden"></i>
+    </span>
+
+    
+
+<header class="panel-cover panel-cover--collapsed">
+
+
+  <div class="panel-main">
+
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+
+        
+
+        <h1 class="panel-cover__title panel-title"><a href="/" title="link to homepage">My Software</a></h1>
+        <hr class="panel-cover__divider" />
+
+        
+
+        <div class="navigation-wrapper">
+
+          <nav class="cover-navigation cover-navigation--primary">
+            <ul class="navigation">
+
+              
+                
+                <li class="navigation__item"><a href="/" title="" class="">首页</a></li>
+              
+                
+                <li class="navigation__item"><a href="/DraftNote" title="" class="">Draftnote</a></li>
+              
+                
+                <li class="navigation__item"><a href="/reminder" title="" class="">Reminder</a></li>
+              
+                
+                <li class="navigation__item"><a href="/mosquitto" title="" class="">mosquitto</a></li>
+              
+                
+                <li class="navigation__item"><a href="/#blog" title="" class="blog-button">碎碎念</a></li>
+              
+                
+                <li class="navigation__item"><a href="/archive" title="" class="">归档</a></li>
+              
+                
+                <li class="navigation__item"><a href="/about" title="" class="">关于</a></li>
+              
+
+            </ul>
+          </nav>
+
+          <!-- ----------------------------
+To add a new social icon simply duplicate one of the list items from below
+and change the class in the <i> tag to match the desired social network
+and then add your link to the <a>. Here is a full list of social network
+classes that you can use:
+
+    icon-social-500px
+    icon-social-behance
+    icon-social-delicious
+    icon-social-designer-news
+    icon-social-deviant-art
+    icon-social-digg
+    icon-social-dribbble
+    icon-social-facebook
+    icon-social-flickr
+    icon-social-forrst
+    icon-social-foursquare
+    icon-social-github
+    icon-social-google-plus
+    icon-social-hi5
+    icon-social-instagram
+    icon-social-lastfm
+    icon-social-linkedin
+    icon-social-medium
+    icon-social-myspace
+    icon-social-path
+    icon-social-pinterest
+    icon-social-rdio
+    icon-social-reddit
+    icon-social-skype
+    icon-social-spotify
+    icon-social-stack-overflow
+    icon-social-steam
+    icon-social-stumbleupon
+    icon-social-treehouse
+    icon-social-tumblr
+    icon-social-twitter
+    icon-social-vimeo
+    icon-social-xbox
+    icon-social-yelp
+    icon-social-youtube
+    icon-social-zerply
+    icon-mail
+
+-------------------------------->
+
+<!-- add social info here -->
+
+
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="panel-cover--overlay"></div>
+  </div>
+</header>
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner entry">
+            
+
+<article class="post-container post-container--single">
+
+  <header class="post-header">
+    
+    <h1 class="post-title">mosquittoModuileInfo</h1>
+
+    
+
+  </header>
+
+  <section id="post-content" class="article-content post">
+    <h1 id="mosquitto模块分析">mosquitto模块分析</h1><h2 id="概述">概述</h2><p><strong>libmosquitto</strong> 作为 <strong>mosquitto</strong> 开源代码的一部分，主要用来实现 <strong>MQTT</strong> 协议栈和数据包通讯功能。<br>下面将对<strong>libmosquitto</strong>包含的模块进行简要介绍（<strong>mosquitto</strong>模块参考<a href="https://github.com/happyHeartJ/learningMqtt/blob/master/mqttLearning/mosquittoModule.markdown" target="_blank" rel="external">mosquitto模块</a>）。</p>
+<hr>
+<h1 id="mosquitto_internal-h">mosquitto_internal.h</h1><p><strong>mosquitto_internal.h</strong> 中定义了使用的数据结构。包含下列内容：</p>
+<ul>
+<li>enum枚举值</li>
+<li>struct结构体</li>
+<li>函数指针</li>
+<li>全局变量</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">ifdef</span> WITH_BROKER</span></span><br><span class="line"><span class="preprocessor">#  <span class="keyword">include</span> <span class="string">"uthash.h"</span></span></span><br><span class="line"><span class="keyword">struct</span> mosquitto_client_msg;</span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>宏定义</li>
+<li>其他变量定义</li>
+<li>头文件包含</li>
+</ul>
+<h2 id="主要数据结构">主要数据结构</h2><ul>
+<li>客户端状态，用户连接成功，并且发送CONNECT之后的结果</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">enum</span> mosquitto_client_state &#123;</span><br><span class="line"></span><br><span class="line">    mosq_cs_new = <span class="number">0</span>,</span><br><span class="line"></span><br><span class="line">    mosq_cs_connected = <span class="number">1</span>,</span><br><span class="line"></span><br><span class="line">    mosq_cs_disconnecting = <span class="number">2</span>,<span class="comment">// mosquitto_disconnect时设置</span></span><br><span class="line"></span><br><span class="line">    mosq_cs_connect_async = <span class="number">3</span>,<span class="comment">// mosquitto_connect_bind_async，异步线程来connect _mosquitto_thread_main（需要WITH_THREADING）</span></span><br><span class="line"></span><br><span class="line">    mosq_cs_connect_pending = <span class="number">4</span><span class="comment">//没用到</span></span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>消息状态，响应的状态表达为<strong>mosq_ms_wait_for_xxxx</strong>，客户端处理此类消息，消息的收发流程使用</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">enum</span> mosquitto_msg_state &#123;。</span><br><span class="line"></span><br><span class="line">    mosq_ms_invalid = <span class="number">0</span>,</span><br><span class="line"></span><br><span class="line">    mosq_ms_publish_qos0 = <span class="number">1</span>,</span><br><span class="line"></span><br><span class="line">    mosq_ms_publish_qos1 = <span class="number">2</span>,</span><br><span class="line"></span><br><span class="line">    mosq_ms_wait_for_puback = <span class="number">3</span>,<span class="comment">//Oos==1时，发送PUBLISH后等待PUBACK返回</span></span><br><span class="line"></span><br><span class="line">    mosq_ms_publish_qos2 = <span class="number">4</span>,</span><br><span class="line"></span><br><span class="line">    mosq_ms_wait_for_pubrec = <span class="number">5</span>, <span class="comment">//Oos==2时，发送PUBLISH后，等待PUBREC返回</span></span><br><span class="line"></span><br><span class="line">    mosq_ms_resend_pubrel = <span class="number">6</span>,</span><br><span class="line"></span><br><span class="line">    mosq_ms_wait_for_pubrel = <span class="number">7</span>, <span class="comment">//Oos==2时，发送PUBREC后等待PUBREL返回</span></span><br><span class="line"></span><br><span class="line">    mosq_ms_resend_pubcomp = <span class="number">8</span>,</span><br><span class="line"></span><br><span class="line">    mosq_ms_wait_for_pubcomp = <span class="number">9</span>, <span class="comment">//Oos==2时，发送PUBREL后等待PUBCOMP返回</span></span><br><span class="line"></span><br><span class="line">    mosq_ms_send_pubrec = <span class="number">10</span>,</span><br><span class="line"></span><br><span class="line">    mosq_ms_queued = <span class="number">11</span></span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>数据包，发送的数据在组包之后，或者接收的数据在解包之前的状态</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> _mosquitto_packet&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint8_t</span> *payload;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">struct</span> _mosquitto_packet *next;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint32_t</span> remaining_mult;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint32_t</span> remaining_length;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint32_t</span> packet_length;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint32_t</span> to_process;<span class="comment">//发送进度，记录还未发送多少字节，缺省为packet_length</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint32_t</span> pos;<span class="comment">//组包或者发送时用到，发送时记录发送到什么位置</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint16_t</span> mid;<span class="comment">//消息id，当Qos==0 时回调on_publish时用</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint8_t</span> command;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int8_t</span> remaining_count;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>消息</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> mosquitto_message&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> mid;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *topic;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> *payload;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> payloadlen;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> qos;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> retain;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>消息队列</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> mosquitto_message_all&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">struct</span> mosquitto_message_all *next;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">time_t</span> timestamp;<span class="comment">//时间，记录本地软件tick时间</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//enum mosquitto_msg_direction direction;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">enum</span> mosquitto_msg_state state;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> dup;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">struct</span> mosquitto_message msg;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>上下文会话属性</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> mosquitto &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">mosq_sock_t</span> sock;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// socket管道通知：非阻塞模式时</span></span><br><span class="line">    <span class="comment">//通知用，在mosquitto_loop 调用发送,</span></span><br><span class="line">    <span class="keyword">mosq_sock_t</span> sockpairR, sockpairW;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">enum</span> _mosquitto_protocol protocol;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *address;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *id;<span class="comment">//客户端ID</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *username;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *password;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint16_t</span> keepalive;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint16_t</span> last_mid;  <span class="comment">//最后一个消息id，发消息后++</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">enum</span> mosquitto_client_state state;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">time_t</span> last_msg_in;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">time_t</span> last_msg_out;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">time_t</span> <span class="keyword">ping_t</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">struct</span> _mosquitto_packet in_packet;<span class="comment">//接收数据包用</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">struct</span> _mosquitto_packet *current_out_packet;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">struct</span> _mosquitto_packet *out_packet;<span class="comment">//发送数据包队列</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">struct</span> mosquitto_message *will;</span><br><span class="line"></span><br><span class="line"><span class="preprocessor">#<span class="keyword">ifdef</span> WITH_TLS</span></span><br><span class="line"></span><br><span class="line">    SSL *ssl;</span><br><span class="line"></span><br><span class="line">    SSL_CTX *ssl_ctx;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *tls_cafile;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *tls_capath;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *tls_certfile;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *tls_keyfile;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> (*tls_pw_callback)(<span class="keyword">char</span> *buf, <span class="keyword">int</span> size, <span class="keyword">int</span> rwflag, <span class="keyword">void</span> *userdata);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *tls_version;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *tls_ciphers;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *tls_psk;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *tls_psk_identity;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> tls_cert_reqs;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> tls_insecure;</span><br><span class="line"></span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> want_write;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> want_connect;</span><br><span class="line"></span><br><span class="line"><span class="preprocessor">#<span class="keyword">if</span> defined(WITH_THREADING) &amp;&amp; !defined(WITH_BROKER)</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">pthread_mutex_t</span> callback_mutex;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pthread_mutex_t</span> log_callback_mutex;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pthread_mutex_t</span> msgtime_mutex;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pthread_mutex_t</span> out_packet_mutex;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pthread_mutex_t</span> current_out_packet_mutex;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pthread_mutex_t</span> state_mutex;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pthread_mutex_t</span> in_message_mutex;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pthread_mutex_t</span> out_message_mutex;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pthread_mutex_t</span> mid_mutex;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pthread_t</span> thread_id;</span><br><span class="line"></span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> clean_session;</span><br><span class="line"></span><br><span class="line"> </span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> *userdata;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> in_callback;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> message_retry;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">time_t</span> last_retry_check;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">struct</span> mosquitto_message_all *in_messages;<span class="comment">//收到消息队列</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">struct</span> mosquitto_message_all *in_messages_last;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">struct</span> mosquitto_message_all *out_messages;发送消息队列</span><br><span class="line"></span><br><span class="line">    <span class="keyword">struct</span> mosquitto_message_all *out_messages_last;</span><br><span class="line"></span><br><span class="line"> </span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> (*on_connect)(<span class="keyword">struct</span> mosquitto *, <span class="keyword">void</span> *userdata, <span class="keyword">int</span> rc);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> (*on_disconnect)(<span class="keyword">struct</span> mosquitto *, <span class="keyword">void</span> *userdata, <span class="keyword">int</span> rc);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> (*on_publish)(<span class="keyword">struct</span> mosquitto *, <span class="keyword">void</span> *userdata, <span class="keyword">int</span> mid);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> (*on_message)(<span class="keyword">struct</span> mosquitto *, <span class="keyword">void</span> *userdata, <span class="keyword">const</span> <span class="keyword">struct</span> mosquitto_message *message);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> (*on_subscribe)(<span class="keyword">struct</span> mosquitto *, <span class="keyword">void</span> *userdata, <span class="keyword">int</span> mid, <span class="keyword">int</span> qos_count, <span class="keyword">const</span> <span class="keyword">int</span> *granted_qos);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> (*on_unsubscribe)(<span class="keyword">struct</span> mosquitto *, <span class="keyword">void</span> *userdata, <span class="keyword">int</span> mid);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> (*on_log)(<span class="keyword">struct</span> mosquitto *, <span class="keyword">void</span> *userdata, <span class="keyword">int</span> level, <span class="keyword">const</span> <span class="keyword">char</span> *str);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//void (*on_error)();</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *host;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> port;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> in_queue_len;  <span class="comment">//收到消息队列长度</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> out_queue_len;<span class="comment">//发送消息队列长度</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> *bind_address;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> reconnect_delay;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> reconnect_delay_max;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> reconnect_exponential_backoff;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> threaded;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> inflight_messages; <span class="comment">//对于Qos&gt;0的消息，记录没有完成交互记录</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> max_inflight_messages;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>  <br></p>
+<font color="red" size="5">代码详细注解待添加</font>  
+
+<h1 id="memory_mosq模块">memory_mosq模块</h1><ul>
+<li>内存分配处理，可记录内存用量</li>
+</ul>
+<h1 id="net_mosq模块">net_mosq模块</h1><ul>
+<li>网络基础操作，tcp创建，关闭等</li>
+<li>打包/解包数据，向_mosquitto_packet中写入/读取各种数据</li>
+</ul>
+<h1 id="send_mosq模块">send_mosq模块</h1><ul>
+<li>主要实现发送请求逻辑（协议组包），实际命令请求实现组包</li>
+</ul>
+<h1 id="send_client_mosq模块">send_client_mosq模块</h1><ul>
+<li>与send_mosq类似，主要实现客户端常用高频使用接口；其他接口在send_mosq中</li>
+</ul>
+<h1 id="messages_mosq模块">messages_mosq模块</h1><ul>
+<li>主要针对消息的实现(PUBLISH,PUBACK,PUBREL..)</li>
+</ul>
+<h1 id="read_handle">read_handle</h1><ul>
+<li>处理收到的数据包，根据数据包类型做相应处理</li>
+</ul>
+<hr>
+
+  </section>
+
+  
+  
+</article>
+
+
+            <footer class="footer">
+
+    <span class="footer__copyright">&copy; 2014-2015. | 由<a href="https://hexo.io/">Hexo</a>强力驱动 | 主题<a href="https://github.com/someus/huno">Huno</a></span>
+    
+</footer>
+        </div>
+    </div>
+
+    <!-- js files -->
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/scale.fix.js"></script>
+    
+
+    
+
+    <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript"> 
+        $(document).ready(function(){
+            MathJax.Hub.Config({ 
+                tex2jax: {inlineMath: [['[latex]','[/latex]'], ['\\(','\\)']]} 
+            });
+        });
+    </script>
+
+
+    
+    
+    
+    <!--kill ie6 -->
+<!--[if IE 6]>
+  <script src="//letskillie6.googlecode.com/svn/trunk/2/zh_CN.js"></script>
+<![endif]-->
+
+</body>
+</html>
