@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+    
+
+    <title>
+      mosquittoConfDetail 
+    </title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    
+      <meta name="author" content="HeartJ Jiang">
+    
+    
+
+    <meta name="description" content="mosquitto.conf详细说明（转载请注明出处）mosquitto.conf是mosquitto broker的配置文件，在启动配置broker时，可以通过参数“-c”来选择加载mosquitto.conf来使用文件中的配置。默认地，broker不需要加载mosquitto.conf，会使用默认参数。  
+配置文件中，在每一行的起始位置使用 “#” 作为注释标记。配置项与值之间使用一个空格分">
+<meta property="og:type" content="website">
+<meta property="og:title" content="mosquittoConfDetail">
+<meta property="og:url" content="http://mycreation.tech/mosquitto/mosquittoConfDetail.html">
+<meta property="og:site_name" content="My Software">
+<meta property="og:description" content="mosquitto.conf详细说明（转载请注明出处）mosquitto.conf是mosquitto broker的配置文件，在启动配置broker时，可以通过参数“-c”来选择加载mosquitto.conf来使用文件中的配置。默认地，broker不需要加载mosquitto.conf，会使用默认参数。  
+配置文件中，在每一行的起始位置使用 “#” 作为注释标记。配置项与值之间使用一个空格分">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/1.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/2.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/3.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/4.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/5.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/6.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/7.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/8.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/9.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/10.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/11.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/12.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/13.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/14.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/15.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/16.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/17.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/18.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/19.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/20.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/21.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/22.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/23.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/24.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/25.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/26.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/27.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/28.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/29.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/30.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/31.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/32.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/33.png">
+<meta property="og:image" content="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/34.png">
+<meta property="og:updated_time" content="2016-11-08T14:15:21.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="mosquittoConfDetail">
+<meta name="twitter:description" content="mosquitto.conf详细说明（转载请注明出处）mosquitto.conf是mosquitto broker的配置文件，在启动配置broker时，可以通过参数“-c”来选择加载mosquitto.conf来使用文件中的配置。默认地，broker不需要加载mosquitto.conf，会使用默认参数。  
+配置文件中，在每一行的起始位置使用 “#” 作为注释标记。配置项与值之间使用一个空格分">
+    
+    
+    
+      <link rel="icon" type="image/x-icon" href="/favicon.png">
+    
+    <link rel="stylesheet" href="/css/uno.css" type="text/css">
+    <link rel="stylesheet" href="/css/highlight.css" type="text/css">
+    <link rel="stylesheet" href="/css/archive.css" type="text/css">
+
+</head>
+<body>
+
+    <span class="mobile btn-mobile-menu">
+        <i class="icon icon-list btn-mobile-menu__icon"></i>
+        <i class="icon icon-x-circle btn-mobile-close__icon hidden"></i>
+    </span>
+
+    
+
+<header class="panel-cover panel-cover--collapsed">
+
+
+  <div class="panel-main">
+
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+
+        
+
+        <h1 class="panel-cover__title panel-title"><a href="/" title="link to homepage">My Software</a></h1>
+        <hr class="panel-cover__divider" />
+
+        
+
+        <div class="navigation-wrapper">
+
+          <nav class="cover-navigation cover-navigation--primary">
+            <ul class="navigation">
+
+              
+                
+                <li class="navigation__item"><a href="/" title="" class="">首页</a></li>
+              
+                
+                <li class="navigation__item"><a href="/DraftNote" title="" class="">Draftnote</a></li>
+              
+                
+                <li class="navigation__item"><a href="/reminder" title="" class="">Reminder</a></li>
+              
+                
+                <li class="navigation__item"><a href="/mosquitto" title="" class="">mosquitto</a></li>
+              
+                
+                <li class="navigation__item"><a href="/#blog" title="" class="blog-button">碎碎念</a></li>
+              
+                
+                <li class="navigation__item"><a href="/archive" title="" class="">归档</a></li>
+              
+                
+                <li class="navigation__item"><a href="/about" title="" class="">关于</a></li>
+              
+
+            </ul>
+          </nav>
+
+          <!-- ----------------------------
+To add a new social icon simply duplicate one of the list items from below
+and change the class in the <i> tag to match the desired social network
+and then add your link to the <a>. Here is a full list of social network
+classes that you can use:
+
+    icon-social-500px
+    icon-social-behance
+    icon-social-delicious
+    icon-social-designer-news
+    icon-social-deviant-art
+    icon-social-digg
+    icon-social-dribbble
+    icon-social-facebook
+    icon-social-flickr
+    icon-social-forrst
+    icon-social-foursquare
+    icon-social-github
+    icon-social-google-plus
+    icon-social-hi5
+    icon-social-instagram
+    icon-social-lastfm
+    icon-social-linkedin
+    icon-social-medium
+    icon-social-myspace
+    icon-social-path
+    icon-social-pinterest
+    icon-social-rdio
+    icon-social-reddit
+    icon-social-skype
+    icon-social-spotify
+    icon-social-stack-overflow
+    icon-social-steam
+    icon-social-stumbleupon
+    icon-social-treehouse
+    icon-social-tumblr
+    icon-social-twitter
+    icon-social-vimeo
+    icon-social-xbox
+    icon-social-yelp
+    icon-social-youtube
+    icon-social-zerply
+    icon-mail
+
+-------------------------------->
+
+<!-- add social info here -->
+
+
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="panel-cover--overlay"></div>
+  </div>
+</header>
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner entry">
+            
+
+<article class="post-container post-container--single">
+
+  <header class="post-header">
+    
+    <h1 class="post-title">mosquittoConfDetail</h1>
+
+    
+
+  </header>
+
+  <section id="post-content" class="article-content post">
+    <h1 id="mosquitto-conf详细说明">mosquitto.conf详细说明</h1><h2 id="（转载请注明出处）">（转载请注明出处）</h2><p><strong>mosquitto.conf</strong>是mosquitto broker的配置文件，在启动配置broker时，可以通过参数<strong>“-c”</strong>来选择加载<strong>mosquitto.conf</strong>来使用文件中的配置。默认地，broker不需要加载mosquitto.conf，会使用默认参数。  </p>
+<p>配置文件中，在每一行的起始位置使用 <strong>“#”</strong> 作为注释标记。配置项与值之间使用一个空格分隔。  </p>
+<h2 id="Authentication">Authentication</h2><p>配置Authentication部分可以控制对broker的访问权限。默认地，没有给出Authentication配置参数。mosquitto broker提供了三种身份验证方式：用户名/密码，certificate，pre-shared-key。  </p>
+<p>MQTT协议本身提供了用户名/密码的身份验证。使用password_file文件可以定义用户名和密码。使用这种方式要确保使用了网络加密，以防止用户名/密码被中途拦截，遭到攻击。  </p>
+<p>使用加密的certificate方式来提供身份验证，需要开启require_certificate选项，将此项设置为true，客户端必须提供一个有效的certificate才可以成功连接broker。除此之外，有另一个选项也可以提供验证：use_identity_as_username。将use_identity_as_username设置为true，会使用客户端certificate中的Common Name作为MQTT的用户名，以此作为访问控制的验证。  </p>
+<p>使用pre-shared-key需要开启psk_hint 和 psk_file options选项。客户端必须提供有效的id和key才可以成功连接broker。如果设置use_identity_as_username为true，那么会使用PSK id来代替MQTT用户名，以此来验证身份。  </p>
+<h3 id="acl_file">acl_file</h3><p>设置acl_file的路径，格式如下：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">acl_file <span class="type">file</span> path</span><br></pre></td></tr></table></figure></p>
+<p>acl_file的内容包含client可以访问的topic。acl_file限定topic访问权限的格式为：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">topic [<span class="command">read</span>|<span class="command">write</span>|readwrite] &lt;topic&gt;</span><br></pre></td></tr></table></figure></p>
+<p>默认值为<strong>read/write</strong>，topic可以包含过滤器限定符<strong>“+”</strong>和<strong>“#”</strong>。<br>    当allow_anonymous设置为true时，以上的设置是针对所有的匿名登录的client。如果allow_anonymous设置为false，将不允许匿名登录。可以使用格式为：<br>user <username><br>来限制具体的用户对topic的访问，这里的用户名是在password_file文件中定义的，并不是client id。此时，使用格式为：<br>pattern [read|write|readwrite] <topic><br>来控制topic的read、write权限。在topic中可以使用</topic></username></p>
+<ul>
+<li>%c来匹配client id</li>
+<li>%u来匹配client username</li>
+</ul>
+<p>例如，pattern write sensor/%u/data。<br>安装mosquitto后，在/etc/mosquitto/目录下，会有acfile.example。可以参照修改。内容如下图所示，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/1.png" alt="mosquitto.conf"></p>
+<h3 id="allow_anonymous">allow_anonymous</h3><p>设置是否允许匿名登录，格式如下：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">allow_anonymous</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>默认值是<strong>true</strong>，允许匿名登录，设为false，不允许匿名登录。当开启身份验证时，要将该项设置为false。</p>
+<h3 id="allow_duplicate_messages">allow_duplicate_messages</h3><p>设置是否允许重复发送消息，格式如下：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">allow_duplicate_messages</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>当client向broker订阅的topic，彼此有重叠时，例如订阅了foo/#，又订阅了foo/+/baz，MQTT希望当broker接收到匹配topic的消失，仅转发给客户端一次该消息，而不是重复发送。<br>该项默认值是<strong>false</strong>，即不允许重复发送。设置为false，允许重复发送。如下图所示，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/2.png" alt="mosquitto.conf"><br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/3.png" alt="mosquitto.conf"><br>发布者仅发送了一条消息，订阅者收到了两条消息。</p>
+<h3 id="autosave_interval">autosave_interval</h3><p>设置自动保存内存中的数据至磁盘的时间间隔，格式如下：<br><figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">autosave_interval <span class="built_in">seconds</span></span><br></pre></td></tr></table></figure></p>
+<p>如果将值设置为0，仅当broker退出或者接收到信号SIGUSR1时才将内存中的数据保存至磁盘。该选项仅在开启持久化功能时可用。<br>默认值是<strong>1800</strong>秒，即30分钟保存一次。</p>
+<h3 id="autosave_on_changes">autosave_on_changes</h3><p>自动保存内存中的数据至磁盘的方式，格式为：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">autosave_on_changes</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>如果设置为false，那么autosave_interval设定的数值，将作为时间间隔使用。<br>如果设置为true，将autosave_interval设定的数值作为消息的数量使用，当订阅数，retain消息数，队列中的消息数总和超过autosave_interval的设定时，会将内存中的消息保存至磁盘。</p>
+<h3 id="clientid_prefixes">clientid_prefixes</h3><p>broker过滤client的前缀选项，格式为：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">clientid_prefixes</span> prefix</span><br></pre></td></tr></table></figure></p>
+<p>如果设置了此项，只有前缀匹配的client可以连接到broker。如下图所示，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/4.png" alt="mosquitto.conf"><br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/5.png" alt="mosquitto.conf"><br>没有使用前缀hyt-作为id的连接被broker拒绝了。添加id再此连接，如下图所示，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/6.png" alt="mosquitto.conf"><br>连接成功。</p>
+<h3 id="connection_messages">connection_messages</h3><p>设置是否在log中包含client连接和断开的信息。格式如下：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">connection_messages</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>设置为true，包含连接和断开信息，设置为false，不包含。</p>
+<h3 id="include_dir">include_dir</h3><p>设置以<strong>.conf</strong>为后缀的配置文件目录。格式为：<br><figure class="highlight dos"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">include_dir <span class="built_in">dir</span></span><br></pre></td></tr></table></figure></p>
+<p>broker将会从此目录中读取配置文件，需要注意的是，mosquitto.conf文件作为主配置文件不应该在此目录中，并且该项最好在mosquitto.conf的结尾处设置。</p>
+<h3 id="log_dest">log_dest</h3><p>设置日志的输出目的地，格式为：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">log</span>_dest destinations</span><br></pre></td></tr></table></figure></p>
+<p>可选项有：</p>
+<ul>
+<li>stdout，命令行输出</li>
+<li>stderr，命令行输出，该项为默认值</li>
+<li>file，输出至文件。需要指定一个文件保存日志内容，例如：log_dest file /var/log/mosquitto.log。</li>
+<li>syslog，使用用户空间的系统日志，例如/var/log/messages。日志级别为debug, error, warning, notice, information and message。</li>
+<li>none，关闭日志功能<br>需要注意的是，当broker作为Windows服务运行时，默认项为none，并且stdout和stderr都不可用。</li>
+</ul>
+<h3 id="log_facility">log_facility</h3><p>在非Windows平台，使用syslog作为日志输出时，默认会将消息注册为守护程序。<br>设置格式为：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">log</span>_facility <span class="built_in">local</span> facility</span><br></pre></td></tr></table></figure></p>
+<p>其中，facility的值为0至7。</p>
+<h3 id="log_timestamp">log_timestamp</h3><p>是否开启日志时间戳，格式为：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">log</span>_timestamp [ <span class="literal">true</span> | <span class="literal">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>设置为true，日志会包含时间戳，设置为false，不包含时间戳。</p>
+<h3 id="log_type">log_type</h3><p>设置消息的日志类型，格式为：<br>log_type types<br>可选项有：</p>
+<ul>
+<li>debug</li>
+<li>error</li>
+<li>warning</li>
+<li>notice</li>
+<li>information</li>
+<li>subscribe</li>
+<li>unsubscribe</li>
+<li>websockets</li>
+<li>none</li>
+<li>all<br>默认值是<strong>error，warning， notice和information</strong>。</li>
+</ul>
+<h3 id="max_inflight_messages">max_inflight_messages</h3><p>设置最大并行处理消息的数量，格式为：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">max_inflight_messages <span class="command">count</span></span><br></pre></td></tr></table></figure></p>
+<p>允许同时进行传输处理的QoS1和QoS2的消息数量，包括正在进行握手的消息和进行重新发送的消息。默认值是<strong>20</strong>，设置为0，则数量没有限制；设置为1，则确保消息被顺序处理。</p>
+<h3 id="max_queued_messages">max_queued_messages</h3><p>设置队列中在排队的QoS1和QoS2消息的数量，格式为：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">max_queued_messages <span class="command">count</span></span><br></pre></td></tr></table></figure></p>
+<p>默认值是<strong>100</strong>。设置为0，则没有限制（不推荐）。</p>
+<h3 id="message_size_limit">message_size_limit</h3><p>设置发布消息的最大载荷，格式为：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">message_size_<span class="built_in">limit</span> <span class="built_in">limit</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="password_file">password_file</h3><p>设置格式为：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">password_file <span class="type">file</span> path</span><br></pre></td></tr></table></figure></p>
+<p>安装mosquitto后，在/etc/mosquitto/目录下，会有<strong>pwfile.example</strong>和<strong>acfile.example</strong>。可以参照修改。<br>另外，安装mosquitto之后，有一个工具<strong>mosquitto_passwd</strong>，用来管理用户名和密码。运行：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mosquitto_passwd -c pwfile<span class="number">.01</span> userName_Alice</span><br></pre></td></tr></table></figure></p>
+<p><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/7.png" alt="mosquitto.conf"><br>提示输入密码，输入两遍密码，会在文件中对密码加密，如下图所示，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/8.png" alt="mosquitto.conf"><br>文件中的加密结果如下图所示，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/9.png" alt="mosquitto.conf"><br>生成的pwfile.01就是前面提到的password_file文件。想要在pwfile.01中添加密码时，操作少有不同，打开pwfile.01，<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim pwfile<span class="number">.01</span></span><br></pre></td></tr></table></figure></p>
+<p>输入新增的用户名和密码，如下图所示，密码此时明文显示，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/10.png" alt="mosquitto.conf"><br>新增的用户名为userName_Bob，密码为12345。保存退出编辑，输入命令：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mosquitto_passwd -U pwfile<span class="number">.01</span></span><br></pre></td></tr></table></figure></p>
+<p><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/11.png" alt="mosquitto.conf"><br>再打开pwfile.01查看，如下图所示，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/12.png" alt="mosquitto.conf"><br>此时，明文的密码已经加密了。但是，这种方式会导致前面添加的用户名密码失效。可以使用命令：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mosquitto_passwd -b pwfile<span class="number">.01</span> userName_Bob <span class="number">12345</span></span><br></pre></td></tr></table></figure></p>
+<p>来为后续的client添加用户名和密码。需要注意的是，添加密码时是明文显示的。<br>password_file中添加用户名可以用来控制访问权限。</p>
+<h3 id="persistence">persistence</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">persistence</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>如果设置为true，连接、订阅、消息数据都不会保存在persistence_location指定的路径下的mosquitto.db中。当broker重启后，会重新读取mosquitto.db中的数据。当broker关闭会保存数据，并且以autosave_interval指定的时间为间隔，周期地保存数据。</p>
+<h3 id="persistence_file">persistence_file</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">persistence_file <span class="type">file</span> <span class="property">name</span></span><br></pre></td></tr></table></figure></p>
+<p>持久化文件名称，默认值为<strong>mosquitto.db</strong>。</p>
+<h3 id="persistence_location">persistence_location</h3><p>设置格式：<br><figure class="highlight dos"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">persistence_location <span class="built_in">path</span></span><br></pre></td></tr></table></figure></p>
+<p>持久化数据保存的路径。这个路径必须以反斜杠“\”作为结尾。如果不指定的话，会使用当前路径保存。</p>
+<h3 id="persistent_client_expiration">persistent_client_expiration</h3><p>设置格式：<br><figure class="highlight lasso"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">persistent_client_expiration <span class="built_in">duration</span></span><br></pre></td></tr></table></figure></p>
+<p>设置了该项，意味着clean session为false的client，如果没有在一定的时间内重新连接至broker，那么client的持久化信息将被删除。<br>该项不是MQTT标准。<strong>截至目前为止，MQTT说明书中，client的持久化都是永久性的</strong>。</p>
+<h3 id="pid_file">pid_file</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pid_file <span class="type">file</span> path</span><br></pre></td></tr></table></figure></p>
+<p>在指定的目录写入pid文件。默认<strong>没有设置</strong>，不会写入pid文件。如果pid文件不可写，broker将会退出。该项只在broker运行在守护模式时才有作用。<br>如果将broker使用初始化脚本自动启动，通常需要写pid文件。文件的路径可以为：/var/run/mosquitto.pid。</p>
+<h3 id="psk_file">psk_file</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">psk_file <span class="type">file</span> path</span><br></pre></td></tr></table></figure></p>
+<p>设置psk文件目录，该项设置需要listener<strong>启用PSK</strong>。如果设置了该项，会使用psk文件中的访问权限来控制client的连接。psk文件中每一行都是identity:key的格式，key是没有0x开头的十六进制数。Client必须提供可以匹配的identity和PSK才能够连接到listener。</p>
+<h3 id="queue_qos0_messages">queue_qos0_messages</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">queue_qos0_messages</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>该项<strong>不是MQTT标准</strong>。设置该项为true，意味着在持久连接的client断开时，是否将QoS0的消息数计算在max_queued_messages参数中。在MQTT V3.1说明书中，仅指定了QoS1和QoS2消息。</p>
+<h3 id="retained_persistence">retained_persistence</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">retained_persistence</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>与persistence选项相同。</p>
+<h3 id="retry_interval">retry_interval</h3><p>设置格式：<br><figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">retry_interval <span class="built_in">seconds</span></span><br></pre></td></tr></table></figure></p>
+<p>该项数值必须为整数，表明在QoS1和QoS2消息由broker发出后，等待响应的时间间隔。如果在该时间间隔内，没有收到响应，将会重发消息。如果没设置此项，默认值是<strong>20</strong>。</p>
+<h3 id="store_clean_interval">store_clean_interval</h3><p>设置格式：<br><figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">store_clean_interval <span class="built_in">seconds</span></span><br></pre></td></tr></table></figure></p>
+<p>默认值为<strong>10</strong>。当消息不再被引用至内部存储消息被清理的时间。值越小意味着占用更小的内存，但会需要更多的处理时间，相反，值越大，则需要更多的内存和更少的处理时间。如果设置为0，意味着不再被引用的消息将会尽快的被处理。</p>
+<h3 id="sys_interval">sys_interval</h3><p>设置格式：<br><figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sys_interval <span class="built_in">seconds</span></span><br></pre></td></tr></table></figure></p>
+<p>broker更新$SYS消息的时间间隔。默认值为10，如果设置为0，将会完全禁用发布$SYS消息。</p>
+<h3 id="upgrade_outgoing_qos">upgrade_outgoing_qos</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">upgrade_outgoing_qos</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>目前的MQTT标准说明书中没有该项设置，这<strong>不是标准协议内容</strong>。如果设置为true，broker会将发送给client的消息QoS级别与订阅的级别匹配，即订阅时用QoS=0，1，2，发布给client时的消息级别对应的为0，1，2。MQTT标准规定，使用级别较小的来发布，即订阅级别为2，发布者发布的级别为0，broker发布时会使用0发布。默认值为false。</p>
+<h3 id="user">user</h3><p>设置格式：<br><figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">user</span> <span class="title">username</span></span><br></pre></td></tr></table></figure></p>
+<p>当使用root用户运行broker时，会切换使用user指定的用户名的用户，如果无法切换到该用户及组，broker会退出并报错。默认值为<strong>mosquitto</strong>。如果使用非root用户运行，该项没有影响。<br>在Windows平台，该设置没有影响，你可以使用任何用户运行broker。</p>
+<h2 id="Listeners">Listeners</h2><p>通过Listerners配置，可以控制broker的网络端口。  </p>
+<h3 id="bind_address">bind_address</h3><p>设置格式：<br><figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bind_address </span><span class="keyword">address</span></span><br></pre></td></tr></table></figure></p>
+<p>服务绑定的地址。可以限制对于某一接口的访问。如果想要限制只有本地的应用可以连接至broker，可以设置“bind_address localhost”，来自其他计算机的连接默认的1883端口将会被拒绝。可以设置listener项来开启新的端口供访问。</p>
+<h3 id="http_dir">http_dir</h3><p>设置格式：<br><figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http_dir <span class="built_in">directory</span></span><br></pre></td></tr></table></figure></p>
+<p>当一个listener使用websocket协议时，可以提供http服务。设置该项，指定含有提供服务文件的目录。如果没有设置该项，则不可以提供http服务。该目录即提供的连接域名。</p>
+<h3 id="listener">listener</h3><p>设置格式：<br><figure class="highlight elm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">listener</span> <span class="foreign"><span class="keyword">port</span> [bind address/host]</span></span><br></pre></td></tr></table></figure></p>
+<p>在指定的端口上监听连接。可以选择设置绑定在一个指定的IP地址或主机名上。如果设置了此项，全局设置项bind_address和port均为设置，则不会开启默认的监听（1883端口）。<br>此处的bind address/host选项可以使用IP地址和主机名，但对于websocket协议，只可以使用IP地址。下图为使用websocket监听的内容，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/13.png" alt="mosquitto.conf"><br>可以使用websockets客户端连接broker的9001端口。</p>
+<h3 id="max_connections">max_connections</h3><p>设置格式：<br>max_connections count<br>限制当前的listener最大连接数。如果设置为-1，则没有限制。如下图设置，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/14.png" alt="mosquitto.conf"><br>最大连接数为2，测试client连接，如下图所示，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/15.png" alt="mosquitto.conf"><br>共有3个client连接9001端口，图中只有两个成功连接，第三个一直处于发送CONNECT，等待CONNACK的状态。在broker一端，已经显示超过最大连接数据，如下图所示，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/16.png" alt="mosquitto.conf">  </p>
+<h3 id="mount_point">mount_point</h3><p>设置格式：<br>mount_point topic prefix<br>添加topic前缀，当client连接了一个使用此项的listener时，所有订阅的topic都会被添加前缀。当消息发布给client时，会移除前缀。意味着，一个client连接到使用了此项的listener时，只能接收到以添加了前缀的topic发布的消息。例如，mount_point设置为example，有clientA向broker订阅topic：mqtt，clientB向broker发布消息，topic：mqtt，如下图所示，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/17.png" alt="mosquitto.conf"><br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/18.png" alt="mosquitto.conf"><br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/19.png" alt="mosquitto.conf"><br>虽然clientA和clientB使用的topic都是mqtt，但是在broker上显示的topic是example/mqtt，是添加了前缀的。</p>
+<h3 id="port">port</h3><p>设置格式：<br><figure class="highlight elm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="foreign"><span class="keyword">port</span> <span class="keyword">port</span> number</span></span><br></pre></td></tr></table></figure></p>
+<p>设置默认的listener监听端口，默认使用1883。</p>
+<h3 id="protocol">protocol</h3><p>设置格式：<br><figure class="highlight ceylon"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">protocol <span class="keyword">value</span></span><br></pre></td></tr></table></figure></p>
+<p>设置listener使用的协议。可选项有：</p>
+<ul>
+<li>mqtt</li>
+<li>default</li>
+<li>websockets<br>websockets在编译时，默认是没有开启的。除了cafile, certfile, keyfile ciphers之外，基于TLS的身份验证也可以用于websockets。</li>
+</ul>
+<h3 id="use_username_as_clientid">use_username_as_clientid</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">use_username_as_clientid</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>设置为true，client在连接broker的时候，使用username来替代clientid。该项允许将身份验证绑定在clientid上。意味着，可以防止client因为clientid相同而连接失败。默认值是false。</p>
+<h3 id="websockets_log_level">websockets_log_level</h3><p>设置格式：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">websockets_<span class="built_in">log</span>_level level</span><br></pre></td></tr></table></figure></p>
+<p>修改websockets日志级别。这是全局设置项。不能针对单独的listener来设置级别。必须使用log<em>type websockets项才能使用此项，默认值是<em>_0</em></em>。</p>
+<h2 id="Certificate_based_SSL/TLS_Support">Certificate based SSL/TLS Support</h2><p>基于SSL/TLS的身份验证，可用于所有的Listeners。</p>
+<h3 id="cafile">cafile</h3><p>使用SSL，cafile与capath至少要提供1个。<br>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cafile <span class="type">file</span> path</span><br></pre></td></tr></table></figure></p>
+<p>指定PEM编码的CA证书文件。</p>
+<h3 id="capath">capath</h3><p>使用SSL，cafile与capath至少要提供1个。<br>设置格式：<br><figure class="highlight dos"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">capath directory <span class="built_in">path</span></span><br></pre></td></tr></table></figure></p>
+<p>包含PEM编码的CA证书文件目录，文件必须以.pem作为后缀名。每次添加或者删除一个证书时，使用命令：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">c_rehash &lt;<span class="command">path to</span> capath&gt;</span><br></pre></td></tr></table></figure></p>
+<h3 id="certfile">certfile</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">certfile <span class="type">file</span> path</span><br></pre></td></tr></table></figure></p>
+<p>指定PEM证书文件。</p>
+<h3 id="ciphers">ciphers</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ciphers cipher:<span class="type">list</span></span><br></pre></td></tr></table></figure></p>
+<p>允许的密码列表，密码之间使用冒号分隔，这就是SSL/TLS的加密算法。可以使用命令：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">openssl</span> ciphers</span><br></pre></td></tr></table></figure></p>
+<p>获得正在使用的密码列表，如下图所示，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/20.png" alt="mosquitto.conf">  </p>
+<h3 id="crlfile">crlfile</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">crlfile <span class="type">file</span> path</span><br></pre></td></tr></table></figure></p>
+<p>指定一个PEM编码的文件，该文件包含撤销访问权限的client证书列表。使用该项设置，需要将require_certificate设置为true。</p>
+<h3 id="keyfile">keyfile</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keyfile <span class="type">file</span> path</span><br></pre></td></tr></table></figure></p>
+<p>指定PEM编码的密钥文件。</p>
+<h3 id="require_certificate">require_certificate</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">require_certificate</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>默认地，SSL/TLS在listener上的工作方式类似于https在web server上的工作方式，server拥有一个CA签名的证书，client会判断这个证书是不是可信的，目的是对网络传输进行加密。将该项设置为true，client必须提供一个有效的证书来进行网络连接。这种机制可以在MQTT协议之外来控制对broker的访问权限。</p>
+<h3 id="tls_version">tls_version</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tls_version <span class="property">version</span></span><br></pre></td></tr></table></figure></p>
+<p>设置listener使用的TLS的版本。可选项有：</p>
+<ul>
+<li>tlsv1.2</li>
+<li>tlsv1.1</li>
+<li>tlsv1<br>如果没设置该项，默认会启动<strong>所有版本</strong>的TLS。</li>
+</ul>
+<h3 id="use_identity_as_username">use_identity_as_username</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">use_identity_as_username</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>如果已经将require_certificate设置为true，可以将该项也设置为true，来使用client证书中的CN值作为username。<br>当该项为ture时，listener则不再使用password_file提供的用户名和密码来验证权限。</p>
+<h2 id="Pre-shared-key_based_SSL/TLS_Support">Pre-shared-key based SSL/TLS Support</h2><p>基于SSL/TLS的PSK，可用于所有的Listeners。</p>
+<h3 id="psk_hint">psk_hint</h3><p>设置格式：<br><figure class="highlight axapta"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">psk_hint <span class="keyword">hint</span></span><br></pre></td></tr></table></figure></p>
+<p>设置该项来启用listener的PSK功能，同时也作为listener的identifier。hint值是开放格式的字符串，本身没有太多含义。hit值会发送给client。</p>
+<h3 id="use_identity_as_username-1">use_identity_as_username</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">use_identity_as_username</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>设置此项，将使用client发送的psk identity作为username。username会正常检查，必须使用password_file或者其他的身份验证方式，在没有密码时使用。</p>
+<h2 id="Configuring_Bridges">Configuring Bridges</h2><p>通过配置，可以使用桥接将多个broker连接，构成分布式架构的broker群。</p>
+<h3 id="address">address</h3><p>设置格式：<br><figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">address</span> <span class="tag">address</span>[:port] [<span class="tag">address</span>[:port]], addresses <span class="tag">address</span>[:port] [<span class="tag">address</span>[:port]]</span><br></pre></td></tr></table></figure></p>
+<p>桥接的broker的地址和端口，默认端口为1883。可以指定多个地址和端口。对于每一个桥接都必须设置此项。</p>
+<h3 id="bridge_attempt_unsubscribe">bridge_attempt_unsubscribe</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">bridge_attempt_unsubscribe</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>默认值为<strong>true</strong>,topic由in转为out时，会发出取消订阅topic到桥接的另一端broker，将此项设置为false，在in和out转换时，不会发送取消订阅的请求。</p>
+<h3 id="bridge_protocol_version">bridge_protocol_version</h3><p>设置格式：<br>bridge_protocol_version version<br>设置桥接使用的MQTT协议版本，可以使用</p>
+<ul>
+<li>mqttv31</li>
+<li>mqttv311<br>默认值为<strong>mqttv31</strong>。</li>
+</ul>
+<h3 id="cleansession">cleansession</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">cleansession</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>默认值为<strong>false</strong>，在网络连接失效时，在remote broker上的所有订阅都会被保留。如果设置为true，所有订阅将被清除。<br>需要注意的是，如果设置为true，每次在重新建立桥接时，将会发送大量retain消息。<br>如果设置为false，如果更改了订阅，那么在接收消息时，有可能会造成意想不到的结果，这是因为remote broker会保留原有的消息订阅。当产生这个问题时，将此项设置为true来建立桥接，再将此项设置为false建立桥接。</p>
+<h3 id="connection">connection</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">connection <span class="property">name</span></span><br></pre></td></tr></table></figure></p>
+<p>桥接的名字。作为在remote broker上显示的client id。</p>
+<h3 id="keepalive_interval">keepalive_interval</h3><p>设置格式：<br><figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keepalive_interval <span class="built_in">seconds</span></span><br></pre></td></tr></table></figure></p>
+<p>当没有数据传输时，桥接之间的心跳检测时间间隔。默认是<strong>60</strong>，最小值是5。</p>
+<h3 id="idle_timeout">idle_timeout</h3><p>设置格式：<br><figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">idle_timeout <span class="built_in">seconds</span></span><br></pre></td></tr></table></figure></p>
+<p>当一个桥接使用lazy类型时，在它停止前，必须处于空闲的时间量。默认是<strong>60</strong>。</p>
+<h3 id="local_clientid">local_clientid</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">local_clientid <span class="property">id</span></span><br></pre></td></tr></table></figure></p>
+<p>设置在本地broker上显示的client id。如果没设置，将使用如下格式定义：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">local</span>.&lt;clientid&gt;</span><br></pre></td></tr></table></figure></p>
+<p>如果你建立一个指向自己的桥接，local_clientid和clientid不能相同。</p>
+<h3 id="local_password">local_password</h3><p>设置格式：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">local</span>_password password</span><br></pre></td></tr></table></figure></p>
+<p>当建立一个指向自己的桥接时使用的本地密码。</p>
+<h3 id="local_username">local_username</h3><p>设置格式：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">local</span>_username username</span><br></pre></td></tr></table></figure></p>
+<p>当建立一个指向自己的桥接时使用的用户名。</p>
+<h3 id="notifications">notifications</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">notifications</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>默认值为<strong>true</strong>，向local broker和remote broker发布关于桥接状态的通知消息。如果没设置notification_topics项，retain消息会使用<br><figure class="highlight pf"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$SYS</span>/broker/connection/<span class="variable">&lt;clientid&gt;</span>/<span class="keyword">state</span></span><br></pre></td></tr></table></figure></p>
+<p>作为topic发布。message为1，表明连接正常，0表示连接失败。</p>
+<h3 id="notification_topic">notification_topic</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">notification_topic</span> topic</span><br></pre></td></tr></table></figure></p>
+<p>为桥接通知设置发布的topic。</p>
+<h3 id="remote_clientid">remote_clientid</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">remote_clientid <span class="property">id</span></span><br></pre></td></tr></table></figure></p>
+<p>设置在remote broker上显示的id。如果没设置，将使用如下格式定义：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="property">name</span>.hostname</span><br></pre></td></tr></table></figure></p>
+<p>其中，name是桥接的名字，hostname是主机名。</p>
+<h3 id="remote_password">remote_password</h3><p>设置格式：<br><figure class="highlight ceylon"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">remote<span class="number">_p</span>assword <span class="keyword">value</span></span><br></pre></td></tr></table></figure></p>
+<p>配置桥接密码，仅在启用remote_username时有效。当连接到一个使用MQTT V3.1或以上协议的broker，并且该broker开启了用户名/密码验证身份时，需要使用该项配置。</p>
+<h3 id="remote_username">remote_username</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">remote_username <span class="property">name</span></span><br></pre></td></tr></table></figure></p>
+<p>用法参考remote_password。</p>
+<h3 id="restart_timeout">restart_timeout</h3><p>设置格式：<br><figure class="highlight ceylon"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">restart<span class="number">_</span>timeout <span class="keyword">value</span></span><br></pre></td></tr></table></figure></p>
+<p>桥接（使用automatic start类型）重新连接前等待的时间量，默认是<strong>30秒</strong>。</p>
+<h3 id="round_robin">round_robin</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">round_robin</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>如果在address/addresses配置项为桥接设置多个地址，round<em>robin项可以重定义桥接失败时的行为。<br>默认为<em>_false</em></em>，将第一个地址作为主地址，如果连接失败，会轮流连接后续的地址，同时，也会周期的尝试连接主地址。<br>如果设置为true，所有的地址都是相同级别，一个连接失败，会尝试连接下一个。如果连接成功，会保持连接直到连接失效。</p>
+<h3 id="start_type">start_type</h3><p>设置格式：<br><figure class="highlight gherkin"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">start_type [ automatic |<span class="string"> lazy </span>|<span class="string"> once ]</span></span><br></pre></td></tr></table></figure></p>
+<p>设置桥接的启动类型。可选项有：</p>
+<ul>
+<li>automatic，默认值，启动时自动连接，如果连接失败，会在30秒后重新连接</li>
+<li>lazy，当队列中的消息数量超过threshold项的值时，会启动连接。在空闲一段时间后（idle_timeout项的值），会自动停止。</li>
+<li>once，启动时尝试连接一次，失败后不会尝试重新连接。</li>
+</ul>
+<h3 id="threshold">threshold</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">threshold <span class="command">count</span></span><br></pre></td></tr></table></figure></p>
+<p>启动lazy类型的桥接的队列中消息数量的阈值。默认为<strong>10</strong>。</p>
+<h3 id="topic">topic</h3><p>设置格式：<br><figure class="highlight inform7"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">topic pattern <span class="comment">[<span class="comment">[<span class="comment">[ out | in | both ]</span> qos-level]</span> local-prefix remote-prefix]</span></span><br></pre></td></tr></table></figure></p>
+<p>设置桥接的topic。桥接中的broker，其实相当于彼此订阅的client，需要设置订阅和发布topic。任何符合pattern定义的topic都会在桥接中共享。<br>对于local broker，in表示消息来自remote broker，流入local broker；out表示消息来自local broker，流向remote broker；both表示双向均可。默认值为<strong>out</strong>。<br>qos-level定义了topic的消息级别，默认值为<strong>0</strong>。<br>local-prefix 和 remote-prefix是附加的topic前缀。local broker会向remote broker订阅remote-prefix/topic，当有client发布匹配的消息至remote broker时，remote broker会将消息转发至local broker，桥接会将remote-prefix替换成local-prefix，构成local-prefix/topic，订阅此topic的client会收到消息。同样的,当local broker接收到client发布的消息,发布主题为local-prefix/topic，会将local-prefix/topic替换成remote-prefix/topic转发至remote broker，此时，在remote broker订阅remote-prefix/topic的client可以收到消息。<br>local和remote是相对的概念，topic或者消息率先到达的broker即为local broker，转发消息的目的地，即为remote broker。下列图显示了使用桥接的过程。<br>配置桥接信息，  </p>
+<ul>
+<li>connection bridge_14_15</li>
+<li>address 192.168.72.14:1883</li>
+<li>cleansession true</li>
+<li>topic # both 0 local/topic/ remote/topic/<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/21.png" alt="mosquitto.conf"><br>本地ip地址为192.168.72.14，远端ip为192.268.72.15。<br>启动remote broker和local broker，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/22.png" alt="mosquitto.conf"><br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/23.png" alt="mosquitto.conf"><br>可以看到桥接在loca broker上订阅的topic是local/topic/#，在remote broker上订阅的topic是remote/topic/#。<br>启动client在local broker和remote broker上订阅，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/24.png" alt="mosquitto.conf"><br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/25.png" alt="mosquitto.conf"><br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/26.png" alt="mosquitto.conf"><br>启动client，发布消息，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/27.png" alt="mosquitto.conf"><br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/28.png" alt="mosquitto.conf"><br>桥接已经将prefix进行替换，订阅在remote broker和local broker的client均收到的了消息，在remote broker和local broker上的内容如下，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/29.png" alt="mosquitto.conf"><br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/30.png" alt="mosquitto.conf"><br>更换topic和ip重新发布消息，<br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/31.png" alt="mosquitto.conf"><br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/32.png" alt="mosquitto.conf"><br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/33.png" alt="mosquitto.conf"><br><img src="https://github.com/happyHeartJ/learningMqtt/blob/master/imgs/mosquitto.conf/34.png" alt="mosquitto.conf"><br>local-prefix和remote-prefix均为可选项。空prefix可以使用””替代。  <h3 id="try_private">try_private</h3>设置格式：<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">try_private</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>默认值为<strong>true</strong>，意味着桥接不会将broker看作普通的client。</p>
+<h2 id="SSL/TLS_Support">SSL/TLS Support</h2><p>对于所有的桥接都可以使用SSL/TLS。</p>
+<h3 id="bridge_cafile">bridge_cafile</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bridge_cafile <span class="type">file</span> path</span><br></pre></td></tr></table></figure></p>
+<p>开启SSL/TLS支持，bridge_cafile和bridge_capath至少要设置其中一个。<br>bridge_cafile指定了一个PEM编码的CA证书文件，该证书已经为remote broker签名。</p>
+<h3 id="bridge_capath">bridge_capath</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bridge_capath <span class="type">file</span> path</span><br></pre></td></tr></table></figure></p>
+<p>开启SSL/TLS支持，bridge_cafile和bridge_capath至少要设置其中一个。<br>指定一个目录，目录中包含PEM编码的CA证书文件，并且已经为remote broker签名。文件必须以”.crt”结尾。每次添加或删除一个证书时，使用命令：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">c_rehash &lt;<span class="command">path to</span> bridge_capath&gt;</span><br></pre></td></tr></table></figure></p>
+<h3 id="bridge_certfile">bridge_certfile</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bridge_certfile <span class="type">file</span> path</span><br></pre></td></tr></table></figure></p>
+<p>用于桥接的PEM编码的client证书文件目录。</p>
+<h3 id="bridge_identity">bridge_identity</h3><p>设置格式：<br><figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bridge_identity </span>identity</span><br></pre></td></tr></table></figure></p>
+<p>使用PSK加密的client identity。对于一个桥接，一次仅能使用1个PSK加密的证书文件。</p>
+<h3 id="bridge_insecure">bridge_insecure</h3><p>设置格式：<br><figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">bridge_insecure</span> [ <span class="built_in">true</span> | <span class="built_in">false</span> ]</span><br></pre></td></tr></table></figure></p>
+<p>设置为false，禁止主机名验证。设置为true，有可能会遭到第三方的恶意攻击。在生产环境中，需要将此项设置为false。</p>
+<h3 id="bridge_keyfile">bridge_keyfile</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bridge_keyfile <span class="type">file</span> path</span><br></pre></td></tr></table></figure></p>
+<p>指定目录，目录中包含用于桥接的PEM编码的key。</p>
+<h3 id="bridge_psk">bridge_psk</h3><p>设置格式：<br><figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bridge_psk </span>key</span><br></pre></td></tr></table></figure></p>
+<p>PEM编码的十六进制格式key文件。</p>
+<h3 id="bridge_tls_version">bridge_tls_version</h3><p>设置格式：<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bridge_tls_version <span class="property">version</span></span><br></pre></td></tr></table></figure></p>
+<p>设置桥接使用的TLS版本。可选项有：</p>
+<ul>
+<li>tlsv1.2，默认值</li>
+<li>tlsv1.1 </li>
+<li>tlsv1<br>remote broker必须支持相同的TLS版本才能连接成功。</li>
+</ul>
+<hr>
+<p>部分内容翻译的较为生硬，有些理解也不完全正确，暂且定为目标，后续有时间再修改<br>(That’s all)</p>
+
+  </section>
+
+  
+  
+</article>
+
+
+            <footer class="footer">
+
+    <span class="footer__copyright">&copy; 2014-2015. | 由<a href="https://hexo.io/">Hexo</a>强力驱动 | 主题<a href="https://github.com/someus/huno">Huno</a></span>
+    
+</footer>
+        </div>
+    </div>
+
+    <!-- js files -->
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/scale.fix.js"></script>
+    
+
+    
+
+    <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript"> 
+        $(document).ready(function(){
+            MathJax.Hub.Config({ 
+                tex2jax: {inlineMath: [['[latex]','[/latex]'], ['\\(','\\)']]} 
+            });
+        });
+    </script>
+
+
+    
+    
+    
+    <!--kill ie6 -->
+<!--[if IE 6]>
+  <script src="//letskillie6.googlecode.com/svn/trunk/2/zh_CN.js"></script>
+<![endif]-->
+
+</body>
+</html>
