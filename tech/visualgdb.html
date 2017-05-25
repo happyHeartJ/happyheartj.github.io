@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+    
+
+    <title>
+      visualgdb 
+    </title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    
+      <meta name="author" content="HeartJ Jiang">
+    
+    
+
+    <meta name="description" content="Windows平台调试Linux程序0、blah blah blah……相对于Windows平台上的IDE工具，Linux在这方面稍差，命令行的调试始终没有GUI的调试直观和简单，也可能是没有习惯使用Linux的调试工具。  
+其实，还是有办法可以在Windows平台使用IDE来调试Linux程序的。  
+1、准备工作
+Windows 7  
+Visual Studio 2015 Communit">
+<meta property="og:type" content="website">
+<meta property="og:title" content="visualgdb">
+<meta property="og:url" content="http://mycreation.tech/tech/visualgdb.html">
+<meta property="og:site_name" content="My Software">
+<meta property="og:description" content="Windows平台调试Linux程序0、blah blah blah……相对于Windows平台上的IDE工具，Linux在这方面稍差，命令行的调试始终没有GUI的调试直观和简单，也可能是没有习惯使用Linux的调试工具。  
+其实，还是有办法可以在Windows平台使用IDE来调试Linux程序的。  
+1、准备工作
+Windows 7  
+Visual Studio 2015 Communit">
+<meta property="og:image" content="http://wx4.sinaimg.cn/mw690/006eyqCyly1ffwuyweignj30kp0b5weu.jpg">
+<meta property="og:image" content="http://wx2.sinaimg.cn/mw690/006eyqCyly1ffwuz00w76j30qd0i5q4i.jpg">
+<meta property="og:image" content="http://wx1.sinaimg.cn/mw690/006eyqCyly1ffwuzj4ib1j30na0igmz6.jpg">
+<meta property="og:image" content="http://wx1.sinaimg.cn/mw690/006eyqCyly1ffwv0fqj15j30nb0imdhx.jpg">
+<meta property="og:image" content="http://wx1.sinaimg.cn/mw690/006eyqCyly1ffwv0j08d7j30fh0c7t9e.jpg">
+<meta property="og:image" content="http://wx4.sinaimg.cn/mw690/006eyqCyly1ffwv0m97goj30n70ik0um.jpg">
+<meta property="og:image" content="http://wx2.sinaimg.cn/mw690/006eyqCyly1ffwuz66uhuj30aa022q2s.jpg">
+<meta property="og:image" content="http://wx3.sinaimg.cn/mw690/006eyqCyly1ffwuzaqu7aj31160kv76s.jpg">
+<meta property="og:image" content="http://wx1.sinaimg.cn/mw690/006eyqCyly1ffwv0qnow0j31130kzgnu.jpg">
+<meta property="og:image" content="http://wx4.sinaimg.cn/mw690/006eyqCyly1ffwv0umib9j31180kwacr.jpg">
+<meta property="og:image" content="http://wx3.sinaimg.cn/mw690/006eyqCyly1ffwv180y10j30qd03cq2u.jpg">
+<meta property="og:updated_time" content="2017-05-25T14:35:25.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="visualgdb">
+<meta name="twitter:description" content="Windows平台调试Linux程序0、blah blah blah……相对于Windows平台上的IDE工具，Linux在这方面稍差，命令行的调试始终没有GUI的调试直观和简单，也可能是没有习惯使用Linux的调试工具。  
+其实，还是有办法可以在Windows平台使用IDE来调试Linux程序的。  
+1、准备工作
+Windows 7  
+Visual Studio 2015 Communit">
+    
+    
+    
+      <link rel="icon" type="image/x-icon" href="/favicon.png">
+    
+    <link rel="stylesheet" href="/css/uno.css" type="text/css">
+    <link rel="stylesheet" href="/css/highlight.css" type="text/css">
+    <link rel="stylesheet" href="/css/archive.css" type="text/css">
+
+</head>
+<body>
+
+    <span class="mobile btn-mobile-menu">
+        <i class="icon icon-list btn-mobile-menu__icon"></i>
+        <i class="icon icon-x-circle btn-mobile-close__icon hidden"></i>
+    </span>
+
+    
+
+<header class="panel-cover panel-cover--collapsed">
+
+
+  <div class="panel-main">
+
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+
+        
+
+        <h1 class="panel-cover__title panel-title"><a href="/" title="link to homepage">My Software</a></h1>
+        <hr class="panel-cover__divider" />
+
+        
+
+        <div class="navigation-wrapper">
+
+          <nav class="cover-navigation cover-navigation--primary">
+            <ul class="navigation">
+
+              
+                
+                <li class="navigation__item"><a href="/" title="" class="">首页</a></li>
+              
+                
+                <li class="navigation__item"><a href="/DraftNote" title="" class="">Draftnote</a></li>
+              
+                
+                <li class="navigation__item"><a href="/reminder" title="" class="">Reminder</a></li>
+              
+                
+                <li class="navigation__item"><a href="/mosquitto" title="" class="">mosquitto</a></li>
+              
+                
+                <li class="navigation__item"><a href="/blah" title="" class="">碎碎念</a></li>
+              
+                
+                <li class="navigation__item"><a href="/tech" title="" class="">Tech</a></li>
+              
+                
+                <li class="navigation__item"><a href="/archive" title="" class="">归档</a></li>
+              
+                
+                <li class="navigation__item"><a href="/about" title="" class="">关于</a></li>
+              
+
+            </ul>
+          </nav>
+
+          <!-- ----------------------------
+To add a new social icon simply duplicate one of the list items from below
+and change the class in the <i> tag to match the desired social network
+and then add your link to the <a>. Here is a full list of social network
+classes that you can use:
+
+    icon-social-500px
+    icon-social-behance
+    icon-social-delicious
+    icon-social-designer-news
+    icon-social-deviant-art
+    icon-social-digg
+    icon-social-dribbble
+    icon-social-facebook
+    icon-social-flickr
+    icon-social-forrst
+    icon-social-foursquare
+    icon-social-github
+    icon-social-google-plus
+    icon-social-hi5
+    icon-social-instagram
+    icon-social-lastfm
+    icon-social-linkedin
+    icon-social-medium
+    icon-social-myspace
+    icon-social-path
+    icon-social-pinterest
+    icon-social-rdio
+    icon-social-reddit
+    icon-social-skype
+    icon-social-spotify
+    icon-social-stack-overflow
+    icon-social-steam
+    icon-social-stumbleupon
+    icon-social-treehouse
+    icon-social-tumblr
+    icon-social-twitter
+    icon-social-vimeo
+    icon-social-xbox
+    icon-social-yelp
+    icon-social-youtube
+    icon-social-zerply
+    icon-mail
+
+-------------------------------->
+
+<!-- add social info here -->
+
+
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="panel-cover--overlay"></div>
+  </div>
+</header>
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner entry">
+            
+
+<article class="post-container post-container--single">
+
+  <header class="post-header">
+    
+    <h1 class="post-title">visualgdb</h1>
+
+    
+
+  </header>
+
+  <section id="post-content" class="article-content post">
+    <h1 id="Windows平台调试Linux程序">Windows平台调试Linux程序</h1><h2 id="0、blah_blah_blah……">0、blah blah blah……</h2><p>相对于Windows平台上的IDE工具，Linux在这方面稍差，命令行的调试始终没有GUI的调试直观和简单，也可能是没有习惯使用Linux的调试工具。  </p>
+<p>其实，还是有办法可以在Windows平台使用IDE来调试Linux程序的。  </p>
+<h2 id="1、准备工作">1、准备工作</h2><ul>
+<li>Windows 7  </li>
+<li>Visual Studio 2015 Community（简称vs2015）</li>
+<li>VirualGDB 5.2r7 </li>
+<li>VMware Workstation 12 Pro</li>
+<li>VMware中安装Linux，如CentOS、Ubuntu</li>
+</ul>
+<h2 id="2、Demo">2、Demo</h2><h3 id="0、安装VisualGDB">0、安装VisualGDB</h3><p>略……  </p>
+<h3 id="1、创建项目">1、创建项目</h3><ul>
+<li>打开vs2015</li>
+<li>创建项目，如下图所示<br><img src="http://wx4.sinaimg.cn/mw690/006eyqCyly1ffwuyweignj30kp0b5weu.jpg" alt="vs1.png"><br><img src="http://wx2.sinaimg.cn/mw690/006eyqCyly1ffwuz00w76j30qd0i5q4i.jpg" alt="vs2.png"></li>
+<li>配置与Linux环境的连接（Vmware环境），根据需要进行选择<br><img src="http://wx1.sinaimg.cn/mw690/006eyqCyly1ffwuzj4ib1j30na0igmz6.jpg" alt="vs5.png"></li>
+<li>配置SSH连接。示例环境已经配置过SSH，可以直接选择，第一次使用VisualGDB，会要求配置新的SSH<br><img src="http://wx1.sinaimg.cn/mw690/006eyqCyly1ffwv0fqj15j30nb0imdhx.jpg" alt="vs6.png"><br><img src="http://wx1.sinaimg.cn/mw690/006eyqCyly1ffwv0j08d7j30fh0c7t9e.jpg" alt="vs7.png"></li>
+<li>一路next……，会要求配置每次编译的时候由Windows上传至Linux的文件类型，配置完成后点<strong>finish</strong><br><img src="http://wx4.sinaimg.cn/mw690/006eyqCyly1ffwv0m97goj30n70ik0um.jpg" alt="vs8.png">  </li>
+<li>一个适用于Linux环境的项目已经创建好了，但还有其他的内容需要配置。点击 <strong>VisualGDB Startup Project Properties</strong> 进行VisualGDB参数配置<br><img src="http://wx2.sinaimg.cn/mw690/006eyqCyly1ffwuz66uhuj30aa022q2s.jpg" alt="vs3.png"><br><img src="http://wx3.sinaimg.cn/mw690/006eyqCyly1ffwuzaqu7aj31160kv76s.jpg" alt="vs4.png">  </li>
+<li><strong>Projcet settings</strong>，默认即可</li>
+<li><strong>Unit Test</strong>，默认即可</li>
+<li><strong>MSBuild settings</strong>，需要重点配置<strong>command build settings</strong>，<br><img src="http://wx1.sinaimg.cn/mw690/006eyqCyly1ffwv0qnow0j31130kzgnu.jpg" alt="vs9.png"><br>其中，  </li>
+</ul>
+<ol>
+<li><strong>Processor macros</strong>，宏定义，项目中使用的宏可以在此填写</li>
+<li><strong>Include directories</strong>，编译时引用文件的目录</li>
+<li><strong>Libary directories</strong>，编译时库文件的目录</li>
+<li><strong>Libary names</strong>，使用的库文件，需要注意的是库文件的名字必须是libxxxx.so或者libxxxx.a样式的，如果只是xxxx.so貌似是错误</li>
+</ol>
+<ul>
+<li><strong>Debug settings</strong>，在此处配置需要调试的可执行文件。在<em>Debug</em> -&gt; <em>Debugged executable</em>中<br><img src="http://wx4.sinaimg.cn/mw690/006eyqCyly1ffwv0umib9j31180kwacr.jpg" alt="v10.png">  </li>
+<li>其余配置项默认即可（作者目前没有使用到）</li>
+<li>编译，通过SSH可以查看在Linux环境中的编辑结果如何，<br><img src="http://wx3.sinaimg.cn/mw690/006eyqCyly1ffwv180y10j30qd03cq2u.jpg" alt="v11.png"></li>
+<li>至此，已经可以在vs2015中像调试Windows程序那样调试Linux程序了，断点、分步调试都是熟悉的样子  </li>
+</ul>
+
+  </section>
+
+  
+  
+</article>
+
+
+            <footer class="footer">
+
+    <span class="footer__copyright">&copy; 2014-2015. | 由<a href="https://hexo.io/">Hexo</a>强力驱动 | 主题<a href="https://github.com/someus/huno">Huno</a></span>
+    
+</footer>
+        </div>
+    </div>
+
+    <!-- js files -->
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/scale.fix.js"></script>
+    
+
+    
+
+    <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript"> 
+        $(document).ready(function(){
+            MathJax.Hub.Config({ 
+                tex2jax: {inlineMath: [['[latex]','[/latex]'], ['\\(','\\)']]} 
+            });
+        });
+    </script>
+
+
+    
+    
+    
+    <!--kill ie6 -->
+<!--[if IE 6]>
+  <script src="//letskillie6.googlecode.com/svn/trunk/2/zh_CN.js"></script>
+<![endif]-->
+
+</body>
+</html>
