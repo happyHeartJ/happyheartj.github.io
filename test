@@ -1,36 +1,4 @@
 do
-    -- PNAS protocol dissector plugin
-    -- @author: chengqianjie 
-    -- @date: 2022.4.24
-    -- @version: V3.1
-
-	--[[维护记录
-	    --date: 2022.6.14
-	     信令瘦身
-	    --date: 2022.6.24
-	     pnas信令解密
-	    --date: 2022.6.29
-	     信令瘦身 kcp头由40变为36字节		
-		--date: 2022.7.5
-	     1.添加加密相关信元解码；2.修复64位整型数据的解析问题；3.补充一些错误码		 
-		--date: 2022.7.10
-	     修改信元类型		 
-		--date: 2022.7.25
-	     修改reg信元的解析		 
-		--date: 2022.9.14
-		 修改reg信元的解析		 
-		--date: 2022.9.19
-		 修改sds信元的解析		 
-		--date: 2022.9.21
-		 修改reg信元的解析		 
-		--date: 2022.10.18
-	     添加RTPReg的解析		 
-		--date: 2022.11.22
-	     修改加密信令，ip解析問題;视频H265/H264 parameter信元加密标识解析
-		 
-		--date: 2023.2.14
-	     更新3.2版本PNAS变更；修改kcp结构，新增3.2版本号，新增type字段；新增minimalism lmmh v1解析；新增网销机、智能心跳信令信元及相关处理；
-	]]--
 
 
     local proto_name = "pnasm"
