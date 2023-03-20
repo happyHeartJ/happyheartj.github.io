@@ -1,0 +1,2704 @@
+do
+    -- PNAS protocol dissector plugin
+    -- @author: chengqianjie 
+    -- @date: 2022.4.24
+    -- @version: V3.1
+
+	--[[维护记录
+	    --date: 2022.6.14
+	     信令瘦身
+	    --date: 2022.6.24
+	     pnas信令解密
+	    --date: 2022.6.29
+	     信令瘦身 kcp头由40变为36字节		
+		--date: 2022.7.5
+	     1.添加加密相关信元解码；2.修复64位整型数据的解析问题；3.补充一些错误码		 
+		--date: 2022.7.10
+	     修改信元类型		 
+		--date: 2022.7.25
+	     修改reg信元的解析		 
+		--date: 2022.9.14
+		 修改reg信元的解析		 
+		--date: 2022.9.19
+		 修改sds信元的解析		 
+		--date: 2022.9.21
+		 修改reg信元的解析		 
+		--date: 2022.10.18
+	     添加RTPReg的解析		 
+		--date: 2022.11.22
+	     修改加密信令，ip解析問題;视频H265/H264 parameter信元加密标识解析
+		 
+		--date: 2023.2.14
+	     更新3.2版本PNAS变更；修改kcp结构，新增3.2版本号，新增type字段；新增minimalism lmmh v1解析；新增网销机、智能心跳信令信元及相关处理；
+	]]--
+
+
+    local proto_name = "pnasm"
+    local proto_desc = "Private NAS Protocol (KCP)"
+    local proto_obj = Proto(proto_name, proto_desc)
+    local proto_port = 5067
+    local proto_version = ""
+
+    -- create fields
+    local fields = proto_obj.fields
+    local data_dis = Dissector.get("data")
+
+	fields.debug_number     = ProtoField.uint32(proto_name .. ".debug_uint32", "DEBUG_NUMBER")
+	fields.debug_string     = ProtoField.string(proto_name .. ".debug_string", "DEBUG_STRING")
+	fields.debug_ie     = ProtoField.uint32(proto_name .. ".debug_ie", "DEBUG_IE")
+	fields.debug_len     = ProtoField.uint32(proto_name .. ".debug_len", "DEBUG_LEN")
+	fields.offset     = ProtoField.uint32(proto_name .. ".offset", "offset")
+	
+    -- bit operation
+    local bit = {}
+    bit.binary = function(n)
+        local b = {}
+        while n > 0 do
+            if(n % 2 == 0) then
+                table.insert(b, 0)
+            else
+                table.insert(b, 1)
+            end
+            n = math.floor(n / 2)
+        end
+        return b
+    end
+
+    bit.merge = function(b)
+        local len = #b
+        local i = 1
+        local n = 0
+        while (i <= len) do
+            if (b[i] == 1) then
+                n = n + 2 ^ (i - 1)
+            end
+            i = i + 1
+        end
+        return n
+    end
+
+    -- 按位与操作
+    bit.band = function(x, y)
+        local bx = bit.binary(x)
+        local by = bit.binary(y)
+        local m = math.min(#bx, #by)
+        if (m == 0) then
+            return 0
+        end
+        local i = 1
+        local b = {}
+        while (i <= m) do
+            if (bx[i] == 1 and by[i] == 1) then
+                table.insert(b, 1)
+            else
+                table.insert(b, 0)
+            end
+            i = i + 1
+        end
+        return bit.merge(b)
+    end
+
+    -- 无符号右移操作
+    bit.shr = function(num, i)
+        while (num > 0 and i > 0) do
+            num = math.floor(num / 2)
+            i = i - 1
+        end
+        return num
+    end
+
+    -- kcp
+	fields.appid = ProtoField.uint64(proto_name .. ".appid", "appid", base.DEC)
+    fields.conversation = ProtoField.uint32(proto_name .. ".conversation", "conversation", base.DEC)
+	
+	
+    local cmd_array = 
+    {
+        [81] = "PSH",
+        [82] = "ACK",
+        [83] = "ASK",
+        [84] = "TELL",
+		[85] = "RST",
+    }
+    fields.cmd = ProtoField.uint8(proto_name .. ".cmd", "cmd", base.DEC, cmd_array)
+    fields.frg = ProtoField.uint8(proto_name .. ".frg", "frg", base.DEC)
+    fields.wnd = ProtoField.uint16(proto_name .. ".wnd", "wnd", base.DEC)
+    fields.ts  = ProtoField.uint32(proto_name .. ".ts", "ts", base.DEC)
+    fields.sn  = ProtoField.uint32(proto_name .. ".sn", "sn", base.DEC)
+    fields.una = ProtoField.uint32(proto_name .. ".una", "una", base.DEC)
+	fields.kcpversion = ProtoField.uint16(proto_name .. ".kcpversion", "kcpversion", base.DEC)
+	
+	local kcptype_array = 
+    {
+        [00] = "LMMH",
+        [01] = "MINIMALISM LMMH V1",
+        [02] = "MINIMALISM LMMH V2",
+        [03] = "MINIMALISM LMMH V3",
+    }
+	fields.kcptype = ProtoField.uint8(proto_name .. ".kcptype", "kcptype", base.DEC,kcptype_array)
+	
+	--reserved
+	fields.reserved = ProtoField.uint16(proto_name .. ".reserved", "reserved", base.DEC)
+	fields.reserved2 = ProtoField.uint32(proto_name .. ".reserved2", "reserved2", base.DEC)
+    fields.len = ProtoField.uint32(proto_name .. ".len", "len")
+
+    -- LMMH
+    local type_array =
+    {
+        [0] = "Heartbeat",
+        [1] = "PNAS"
+    }
+    fields.magic        = ProtoField.uint32(proto_name .. ".magic", "Magic Number", base.HEX)
+    fields.priority     = ProtoField.uint8(proto_name .. ".priority", "Priority", base.HEX)
+    fields.lmmh_version = ProtoField.uint8(proto_name .. ".lmmh_version", "Version")
+    fields.options      = ProtoField.uint8(proto_name .. ".options", "Options")
+    fields.type         = ProtoField.uint8(proto_name .. ".type", "Message Type", base.HEX, type_array)
+    fields.length       = ProtoField.uint16(proto_name .. ".length", "Message Body Length")
+    fields.checksum     = ProtoField.uint16(proto_name .. ".checksum", "Checksum")
+    fields.appid        = ProtoField.uint64(proto_name .. ".appid", "AppID")
+	
+	--fields.option         = ProtoField.uint8(proto_name .. ".Option", "Option")
+	fields.option1        = ProtoField.uint32(proto_name .. ".Option1", "Option1")
+	fields.option2        = ProtoField.uint32(proto_name .. ".Option2", "Option2")
+	fields.option3        = ProtoField.uint32(proto_name .. ".Option3", "Option3")
+	fields.option4        = ProtoField.uint32(proto_name .. ".Option4", "Option4")
+
+    --心跳
+    local m_type_array = 
+    {
+        [0] = "Request",
+        [1] = "Response"
+    }
+    fields.heartbeat_id        = ProtoField.uint16(proto_name .. ".heartbeat_id", "MessageID")
+    fields.heartbeat_type      = ProtoField.uint16(proto_name .. ".heartbeat_type", "MessageType", base.HEX, m_type_array)
+    fields.heartbeat_timestamp = ProtoField.uint32(proto_name .. ".heartbeat_timestamp", "Timestamp")
+	
+	--加密
+	
+	
+    -- PNAS
+    fields.spare                    = ProtoField.uint8(proto_name .. ".spare", "SPARE", base.HEX, nil, 0xF0)
+    fields.discriminator            = ProtoField.uint8(proto_name .. ".discriminator", "Protocol Discriminator", base.HEX, nil, 0x0F)
+	fields.messageSeqid 			= ProtoField.uint32(proto_name .. ".messageSeqid", "MESSAGE_SEQ_ID")
+    fields.procedure_transaction_id = ProtoField.uint32(proto_name .. ".procedure_transaction_id", "PROCEDURE TRANSACTION ID")
+    local message_type_array = 
+    {
+        [0x01] = "TRUNKING_REGISTER_REQUEST",
+        [0x02] = "TRUNKING_REGISTER_ACCEPT",
+        [0x03] = "TRUNKING_REGISTER_REJECT",
+        [0x04] = "TRUNKING_REGISTER_COMPLETE",
+        [0x05] = "TRUNKING_DEREGISTER_REQUEST",
+        [0x06] = "TRUNKING_DEREGISTER_ACCEPT",
+        [0x07] = "CALL_REQUEST",
+        [0x08] = "CALL_ACCEPT",
+        [0x09] = "CALL_COMPLETE",
+        [0x0A] = "CALL_PROCEEDING",
+        [0x0B] = "CALL_CONFIRMED",
+        [0x0C] = "CALL_REJECT",
+        [0x0D] = "CALL_CONNECT",
+        [0x0E] = "CALL_CONNECT_ACK",
+        [0x0F] = "CALL_ALERTING",
+        -- [0x10] = "GROUP_CALL_SETUP_INDICATION",
+        -- [0x11] = "GROUP_CALL_RELEASE_INDICATION",
+        [0x12] = "CALL_RELEASE_REQUEST",
+        [0x13] = "CALL_RELEASE_RESPONSE",
+        [0x14] = "FLOOR_REQUEST",
+        [0x15] = "FLOOR_GRANT",
+        [0x16] = "FLOOR_GRANT_ACK",
+        [0x17] = "FLOOR_REJECT",
+        [0x18] = "FLOOR_WAIT",
+        [0x19] = "FLOOR_INFORM",
+        [0x1A] = "FLOOR_RELEASE",
+        [0x1B] = "FLOOR_RELEASE_ACK",
+        -- [0x1C] = "VIDEO_SOURCE_INDICATION",
+        -- [0x1D] = "TRUNKING_UPLINK_TRANSPORT",
+        -- [0x1E] = "TRUNKING_DOWNLINK_TRANSPORT",
+        [0x1F] = "KILL_STUN_REVIVE_REQUEST",
+        [0x20] = "KILL_STUN_REVIVE_RESPONSE",
+        -- [0x21] = "GROUP_INFORMATION_UPDATE_REQUEST",
+        -- [0x22] = "GROUP_INFORMATION_UPDATE_COMMAND",
+        -- [0x23] = "GROUP_INFORMATION_UPDATE_RESPONSE",
+        -- [0x24] = "SPEAKING_TIMEOUT_INFORM",
+        -- [0x26] = "CALL_MODIFY_REQUEST",
+        -- [0x27] = "CALL_MODIFY_RESPONSE",
+        -- [0x28] = "CALL_MODIFY_ACK",
+        -- [0x3E] = "STATUS_REQUEST",
+        -- [0x3F] = "STATUS_REPORT",
+        [0x40] = "TRUNKING_AUTHENTICATION_REQUEST",
+        [0x41] = "TRUNKING_AUTHENTICATION_RESPONSE",
+        [0x42] = "MESSAGE_REQUEST",
+        [0x43] = "MESSAGE_RESPONSE",
+        [0x44] = "CALL_REFER_REQUEST",
+        [0x45] = "CALL_REFER_RESPONSE",
+        [0x46] = "HEARTBEAT_REQUEST",
+        [0x47] = "HEARTBEAT_RESPONSE",
+        [0x48] = "GROUP_INFO_NOTIFY_REQUEST",
+        [0x49] = "GROUP_INFO_NOTIFY_RESPONSE",    
+        [0x4A] = "GROUP_INFO_UPDATE_REPORT_REQUEST",
+        [0x4B] = "GROUP_INFO_UPDATE_REPORT_RESPONSE",
+        [0x4C] = "GROUP_AFFILIATION_NOTIFY_REQUEST",
+        [0x4D] = "GROUP_AFFILIATION_NOTIFY_RESPONSE",
+        [0x4E] = "TRUNKING_SYNC_REQUEST",
+        [0x4F] = "TRUNKING_SYNC_RESPONSE",
+        [0x50] = "TRUNKING_ESN_REQUEST",
+        [0x51] = "TRUNKING_ESN_RESPONSE",
+        [0x52] = "TRUNKING_UNAUTHENTICATED",
+        [0x53] = "TRUNKING_CONFIG_REQUEST",
+        [0x54] = "TRUNKING_CONFIG_RESPONSE",
+        [0x55] = "TRUNKING_CONFIG_UPDATE_REQUEST",
+        [0x56] = "TRUNKING_CONFIG_UPDATE_RESPONSE",
+        -- [0x60] = "CALL_MEDIA_REQUEST",
+        -- [0x61] = "CALL_MEDIA_RESPONSE",
+        -- [0x62] = "CALL_MEDIA_RELEASE_REQUEST",
+        -- [0x63] = "CALL_MEDIA_RELEASE_RESPONSE",
+        -- [0x64] = "MEDIA_UPDATE_NOTIFY",
+        -- [0x65] = "MEDIA_UPDATE_NOTIFY_RESPONSE",
+        -- [0x66] = "MEDIA_SESSION_MONITOR_REQUEST",
+        -- [0x67] = "MEDIA_SESSION_MONITOR_RESPONSE",
+        -- [0x68] = "MUTE_DETECTION_REQUEST",
+        -- [0x69] = "MUTE_DETECTION_RESPONSE",
+        -- [0x6A] = "NE_STATUS_REPORT",
+        -- [0x6B] = "NE_STATUS_REPORT_RESPONSE",
+        -- [0x6C] = "MEDIA_INFO_SWAP_REQUEST",
+        -- [0x6D] = "MEDIA_INFO_SWAP_RESPONSE", 
+        [0x70] = "STUN_REPORT_REQUEST",
+        [0x71] = "STUN_REPORT_RESPONSE",
+        [0x72] = "USER_CONFIG_NOTIFY_REQUEST",
+        [0x73] = "USER_CONFIG_NOTIFY_RESPONSE",
+        [0x74] = "USER_REGROUP_REQUEST",
+        [0x75] = "USER_REGROUP_RESPONSE",
+        [0x76] = "UE_CHANGE_PASSWORD_REQUEST",
+        [0x77] = "UE_CHANGE_PASSWORD_RESPONSE",
+        [0x78] = "UE_CAPABILITY_NOTIFY_REQUEST",
+        [0x79] = "UE_CAPABILITY_NOTIFY_RESPONSE",
+        [0x7C] = "CALL_RELEASE_REQUEST_RESPONSE",
+		[0x7D] = "NOTIFY_REQUEST",
+		[0x7E] = "NOTIFY_RESPONSE",
+		
+		--新增
+		[0x80] = "USER_SECRET_NOTIFY_REQUEST",
+		[0x81] = "USER_SECRET_NOTIFY_RESPONSE",
+		[0x82] = "USER_GROUPOPR_REQUEST",
+		[0x83] = "USER_GROUPOPR_RESPONSE",
+		[0x84] = "USER_EXPIRETIME_REQUEST",
+		[0x85] = "USER_EXPIRETIME_RESPONSE",
+		[0x86] = "USER_EXPIRETIME_NOTIFY_REQUEST",
+		[0x87] = "USER_EXPIRETIME_NOTIFY_RESPONSE",
+		[0x88] = "QUERY_BINDINGQR_REQUEST",
+		[0x89] = "QUERY_BINDINGQR_RESPONSE",
+		[0x8A] = "UNBINDING_NOTIFY_REQUEST",
+		[0x8B] = "UNBINDING_NOTIFY_RESPONSE",
+		[0x8C] = "TRUNKING_DELETEUSER_REQUEST",
+		[0x8D] = "TRUNKING_DELETEUSER_RESPONSE",
+		[0x8E] = "HERATBEAT_PING",
+		[0x8F] = "HERATBEAT_PONG",
+		
+        -- [0x94] = "CALL_INFO",
+        [0xFE] = "KEEP_ALIVE"
+    }
+    fields.message_type             = ProtoField.uint8(proto_name .. ".message_type", "PNAS MESSAGE TYPE", base.HEX, message_type_array)
+
+    -- IE TVL
+    fields.ie_length    = ProtoField.uint16(proto_name .. ".ie_length", "Length")
+    fields.ie_value_str = ProtoField.string(proto_name .. ".ie_value_str", "Value")
+
+    fields.ie_value_hex8  = ProtoField.uint8(proto_name .. ".ie_value_int8", "Value", base.HEX)
+    fields.ie_value_hex16 = ProtoField.uint16(proto_name .. ".ie_value_int16", "Value", base.HEX)
+    fields.ie_value_hex32 = ProtoField.uint32(proto_name .. ".ie_value_int32", "Value", base.HEX)
+
+    fields.ie_value_dec8  = ProtoField.uint8(proto_name .. ".ie_value_dec8", "Value", base.DEC)
+    fields.ie_value_dec16 = ProtoField.uint16(proto_name .. ".ie_value_dec16", "Value", base.DEC)
+    fields.ie_value_dec32 = ProtoField.uint32(proto_name .. ".ie_value_dec32", "Value", base.DEC)
+    fields.ie_value_dec64 = ProtoField.string(proto_name .. ".ie_value_dec64", "Value")
+
+    local function message_length_dissector(buf, root, len, tab, tab_offset)
+        -- reserved
+        -- root:add(fields.ie_value_hex8, buf(0, 1))
+		if tab == nil then
+			root:add(fields.ie_value_dec16, buf(1, 2))
+		else
+			root:add(fields.ie_value_dec16, tabBufNum(tab, tab_offset + 1, 2))
+		end
+        return len
+    end
+
+    -- [0x01]
+    fields.amr_bitrate1 = ProtoField.bool(proto_name .. ".amr_bitrate1", "BIT_RATE_1 (4.75Kbps)", 8, nil, 0x01)
+    fields.amr_bitrate2 = ProtoField.bool(proto_name .. ".amr_bitrate2", "BIT_RATE_2 (12.2Kbps)", 8, nil, 0x02)
+    fields.amr_ptime1   = ProtoField.bool(proto_name .. ".amr_ptime1", "PTIME_1 (20ms INTERVAL)", 8, nil, 0x01)
+    fields.amr_ptime2   = ProtoField.bool(proto_name .. ".amr_ptime2", "PTIME_2 (40ms INTERVAL)", 8, nil, 0x02)
+    fields.amr_ptime3   = ProtoField.bool(proto_name .. ".amr_ptime3", "PTIME_3 (60ms INTERVAL)", 8, nil, 0x04)
+    fields.amr_ptime4   = ProtoField.bool(proto_name .. ".amr_ptime4", "PTIME_4 (120ms INTERVAL)", 8, nil, 0x08)
+    fields.amr_format_1 = ProtoField.bool(proto_name .. ".amr_format_1", "PAYLOAD_FORMAT_1 (BYTE ALIGNED)", 8, nil, 0x10)
+    fields.amr_format_2 = ProtoField.bool(proto_name .. ".amr_format_2", "PAYLOAD_FORMAT_2 (BANDWIDTH EFFICIENT)", 8, nil, 0x20)
+    fields.amr_overpdcp = ProtoField.bool(proto_name .. ".amr_overpdcp", "AMR_OVER_PDCP", 8, nil, 0x40)
+
+    local function amr_parameter_dissector(buf, root, len, tab, tab_offset)
+        local var = 0
+		local var1 = 0
+		if tab == nil then 
+			var = buf(0, 1)
+			var1 = buf(1, 1)
+		else
+			var = tabBufNum(tab, tab_offset, 1)
+			var = tabBufNum(tab, tab_offset + 1, 1)
+		end
+		
+        root:add(fields.amr_bitrate1, var)
+        root:add(fields.amr_bitrate2, var)
+
+        root:add(fields.amr_ptime1,   var1)
+        root:add(fields.amr_ptime2,   var1)
+        root:add(fields.amr_ptime3,   var1)
+        root:add(fields.amr_ptime4,   var1)
+        root:add(fields.amr_format_1, var1)
+        root:add(fields.amr_format_2, var1)
+        root:add(fields.amr_overpdcp, var1)
+        return len
+    end
+	
+	
+    fields.ambe_ptime1   = ProtoField.bool(proto_name .. ".ambe_ptime1", "PTIME_1 (20ms INTERVAL)", 8, nil, 0x01)
+    fields.ambe_ptime2   = ProtoField.bool(proto_name .. ".ambe_ptime2", "PTIME_2 (40ms INTERVAL)", 8, nil, 0x02)
+    fields.ambe_ptime3   = ProtoField.bool(proto_name .. ".ambe_ptime3", "PTIME_3 (60ms INTERVAL)", 8, nil, 0x04)
+    fields.ambe_ptime4   = ProtoField.bool(proto_name .. ".ambe_ptime4", "PTIME_4 (120ms INTERVAL)", 8, nil, 0x08)
+	
+	fields.pyload        = ProtoField.uint8(proto_name .. ".pyload", "PYLOAD", base.DEC)
+	
+    local function ambe_parameter_dissector(buf, root, len, tab, tab_offset)
+        local var = 0
+		local var1 = 0
+		if tab == nil then 
+			var = buf(0, 1)
+			var1 = buf(1, 1)
+		else
+			var = tabBufNum(tab, tab_offset, 1)
+			var1 = tabBufNum(tab, tab_offset + 1, 1)
+		end
+        root:add(fields.ambe_ptime1,   var)
+        root:add(fields.ambe_ptime2,   var)
+        root:add(fields.ambe_ptime3,   var)
+        root:add(fields.ambe_ptime4,   var)
+		
+		root:add(fields.pyload,   var1)
+		
+        return len
+    end
+	
+    fields.nvoc_ptime1   = ProtoField.bool(proto_name .. ".nvoc_ptime1", "PTIME_1 (20ms INTERVAL)", 8, nil, 0x01)
+    fields.nvoc_ptime2   = ProtoField.bool(proto_name .. ".nvoc_ptime2", "PTIME_2 (40ms INTERVAL)", 8, nil, 0x02)
+    fields.nvoc_ptime3   = ProtoField.bool(proto_name .. ".nvoc_ptime3", "PTIME_3 (60ms INTERVAL)", 8, nil, 0x04)
+    fields.nvoc_ptime4   = ProtoField.bool(proto_name .. ".nvoc_ptime4", "PTIME_4 (120ms INTERVAL)", 8, nil, 0x08)
+
+    local function nvoc_parameter_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		local var1 = 0
+		if tab == nil then 
+			var = buf(0, 1)
+			var1 = buf(1, 1)
+		else
+			var = tabBufNum(tab, tab_offset, 1)
+			var1 = tabBufNum(tab, tab_offset + 1, 1)
+		end
+		
+        root:add(fields.nvoc_ptime1,   var)
+        root:add(fields.nvoc_ptime2,   var)
+        root:add(fields.nvoc_ptime3,   var)
+        root:add(fields.nvoc_ptime4,   var)
+		
+		root:add(fields.pyload,   var1)
+		
+        return len
+    end
+	
+	fields.ekey_version_number   = ProtoField.uint16(proto_name .. ".ekey_version_number", "VERSION_NUMBER")
+    fields.ekey_version_state   = ProtoField.uint8(proto_name .. ".ekey_version_state", "VERSION_STATE")
+	
+	local function ekey_version_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		local var1 = 0
+		if tab == nil then 
+			var = buf(0, 2)
+			var1 = buf(2, 1)
+		else
+			var = tabBufNum(tab, tab_offset, 2)
+			var1 = tabBufNum(tab, tab_offset + 2, 1)
+		end
+		
+        root:add(fields.ekey_version_number,   var)
+		
+		root:add(fields.ekey_version_state,   var1)
+		
+        return len
+    end
+	
+	
+	fields.data_code_capabliity_encrypt_lib   = ProtoField.bool(proto_name .. ".data_code_capabliity_encrypt_lib", "DATA ENCRYPTY LIB", 8, nil, 0x01)
+	
+	local function data_code_capabliity_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		if tab == nil then 
+			var = buf(0, 1)
+		else
+			var = tabBufNum(tab, tab_offset, 1)
+		end
+		
+        root:add(fields.data_code_capabliity_encrypt_lib,   var)
+	
+        return len
+    end
+	
+	
+	
+	
+    -- [0x04]
+    fields.call_attr_emergency     = ProtoField.bool(proto_name .. ".call_attr_emergency", "EMERGENCY CALL", 16, nil, 0x0100)
+    fields.call_attr_priority      = ProtoField.bool(proto_name .. ".call_attr_priority", "PRE OCCUPIED", 16, nil, 0x0200)
+    fields.call_attr_audio_encryption    = ProtoField.bool(proto_name .. ".call_attr_audio_encryption", "AUDIO E2EE", 16, nil, 0x0400)
+    fields.call_attr_no_floor      = ProtoField.bool(proto_name .. ".call_attr_no_floor", "NO PRE-EMPTIVE FLOOR", 16, nil, 0x0800)
+    fields.call_attr_commencement  = ProtoField.bool(proto_name .. ".call_attr_commencement", "CALL COMMENCEMENT MODE", 16, nil, 0x1000)
+    fields.call_attr_default_floor = ProtoField.bool(proto_name .. ".call_attr_default_floor", "FLOOR REQUEST", 16, nil, 0x80)
+	fields.call_attr_video_encryption = ProtoField.bool(proto_name .. ".call_attr_video_encryption", "VIDEO E2EE", 16, nil, 0x2000)
+	
+    local function call_attribute_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		if tab == nil then 
+			var = buf(0, 2)
+		else
+			var = tabBufNum(tab, tab_offset, 2)
+		end
+		
+        root:add(fields.call_attr_emergency, var)
+        root:add(fields.call_attr_priority, var)
+        root:add(fields.call_attr_audio_encryption, var)
+        root:add(fields.call_attr_no_floor, var)
+        root:add(fields.call_attr_commencement, var)
+		root:add(fields.call_attr_video_encryption, var)
+        root:add(fields.call_attr_default_floor, var)
+   
+		
+        return len
+    end
+
+
+	fields.e2e_key_version   = ProtoField.uint16(proto_name .. ".e2e_key_version", "E2E_KEY_VERSION")
+    fields.e2e_key_index   = ProtoField.uint8(proto_name .. ".e2e_key_index", "E2E_KEY_INDEX")
+	local function e2e_key_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		local var1 = 0
+		if tab == nil then 
+			var = buf(0, 2)
+			var1 = buf(2, 1)
+		else
+			var = tabBufNum(tab, tab_offset, 2)
+			var1 = tabBufNum(tab, tab_offset + 2, 1)
+		end
+		
+        root:add(fields.e2e_key_version,   var)
+		
+		root:add(fields.e2e_key_index,   var1)
+		
+        return len
+    end
+
+	local cmd_types = {
+	  [81] = "PUSH",
+	  [82] = "ACK",
+	  [83] = "WASK",
+	  [84] = "WINS",
+	  [85] = "RST",
+	}
+
+    --Call Type enum
+    local call_type_array = {
+        [0x01] = "FULL DUPLEX SINGLE CALL",
+        [0x02] = "HALF DUPLEX SINGLE CALL",
+        [0x03] = "GROUP CALL",
+        [0x04] = "BACKGROUND VOICE MONITORING",
+        [0x0A] = "VIDEO SINGLE CALL",
+        [0x0B] = "VIDEO GROUP CALL (SAME SOURCE)",
+        [0x0C] = "VIDEO GROUP CALL (DIFFERENT SOURCE)",
+        [0x0D] = "VIDEO PUSH",
+        [0x0E] = "VIDEO UPLOAD",
+        [0x0F] = "VIDEO DOWNLOAD",
+        [0x10] = "VIDEO TRANSFER",
+        [0x11] = "BACKGROUND VIDEO MONITORING",
+        [0x1F] = "VIDEO FORWARDING",
+        [0x20] = "UE VIDEO FORWARDING",
+        [0x21] = "GROUP VIDEO FORWARDING",
+        [0x22] = "PRE-OCCUPIED CALL",
+        [0x23] = "UE VIDEO PUSH",
+        [0x24] = "GROUP VIDEO PUSH",
+        [0xA0] = "MULTICAST",
+        [0xA1] = "VIDEO MULTICAST",
+        [0xA2] = "MUTED VIDEO MULTICAST"
+    }
+    fields.call_type = ProtoField.uint8(proto_name .. ".call_type", "CALL TYPE", base.HEX, call_type_array, 0xFF)
+
+    --Cause enum
+    local cause_array = {
+        [0x00] = "SUCCESS",
+        [0x01] = "MISMATCH PTI",
+        [0x02] = "INVALID PTI",
+        [0x03] = "NETWORK FAILED",
+        [0x04] = "CONGESTION",
+        [0x05] = "NO RESOURCE",
+        [0x06] = "AUTHENTICATION FAILED",
+        [0x07] = "UNDEFINED",
+        [0x08] = "CREATE TRANSPORT LAYER FAILURE",
+        [0x09] = "TIMEOUT",
+        [0x0A] = "FORBIDDEN",
+        [0x0B] = "INVALID USER",
+        [0x0C] = "UNSUPPORTED SERVICE",
+        [0x0D] = "TEMPORARILY UNSUPPORTED SERVICE",
+        [0x0E] = "SERVICE NOT SUPPORTED BY USER",
+        [0x0F] = "USER NOT AUTHORIZED",
+        [0x10] = "PTI OCCUPIED",
+        [0x11] = "PROCEDURE CONFLICT",
+        [0x12] = "MESSAGE SYNTAX ERROR",
+        [0x13] = "INVALID MANDATORY IE",
+        [0x14] = "NONEXISTENT IE",
+        [0x15] = "INVALID CONDITIONAL IE",
+        [0x16] = "PROTOCOL STATE CONFLICT",
+        [0x17] = "ROAMING NOT ALLOWED",
+        [0x18] = "POWER OFF DEREGISTER",
+        [0x19] = "NORMAL DEREGISTER",
+        [0x1A] = "REREGISTER AFTER DEREGISTER",
+        [0x1B] = "USER DATA REMOVAL DEREGISTER",
+        [0x1C] = "NONEXISTENT GROUP",
+        [0x1D] = "FORBIDDEN GROUP",
+        [0x1E] = "CALLED PARTY NOT EXISTED",
+        [0x1F] = "CALLED PARTY FORBIDDEN",
+        [0x20] = "INVALID GROUP MEMBER",
+        [0x21] = "CALLED PARTY NOT AUTHORIZED",
+        [0x22] = "CALLED PARTY POWERED OFF",
+        [0x23] = "CALLED PARTY NO RESPONSE",
+        [0x24] = "NORMAL CALL RELEASE",
+        [0x25] = "DC CALL RELEASE",
+        [0x26] = "ABNORMAL CALL RELEASE",
+        [0x27] = "UE BUSY",
+        [0x28] = "CALL NOT ANSWERED",
+        [0x29] = "CALL REJECTED",
+        [0x2A] = "CALL RELEASED BY PRIORITY USER",
+        [0x2B] = "FLOOR NOT GRANTED",
+        [0x2C] = "QUEUE FULL",
+        [0x2D] = "QUEUE TIMEOUT",
+        [0x2E] = "QUEUE KICKOUT",
+        [0x2F] = "UE FLOOR RELEASE",
+        [0x30] = "FLOOR PREEMPTED",
+        [0x31] = "SPEAKING TIME REMINDER",
+        [0x32] = "ADD GROUP HAS EXISTED",
+        [0x33] = "DEL GROUP NOT EXISTED",
+        [0x34] = "MOD GROUP NOT EXISTED",
+        [0x35] = "UE GROUP COUNT MAXED OUT",
+        [0x36] = "INSUFFICIENT FUNDS",
+        [0x37] = "CALL NOT EXIST",
+        [0x38] = "CALL USER NOT IN SERVICE",
+        [0x39] = "CALL COMPULSORY RELEASE",
+        [0x3A] = "CALL TIMEOUT RELEASE",
+        [0x3B] = "CALL CALLEE NOT IN SERVICE",
+        [0x3C] = "CALL QUIT FLOOR QUEUE",
+        [0x3D] = "CALL E2E ENCRYPT FAILED",
+        [0x3E] = "AUTHORIZATION HAS EXPIRED",
+        [0x3F] = "PACKAGE HAS EXPIRED",
+        [0x4D] = "NARROW NETWORK UNAUTHORIZED",
+        [0x4E] = "BROADBAND NETWORK DISCONNECTION",
+        [0x4F] = "BROADBAND NETWORK RECOVERY",
+        [0x50] = "NET DEREGISTER",
+        [0x51] = "UNSUPPORTED UE TYPE",
+        [0x52] = "NAT NOT SUPPORTED",
+        [0x53] = "CALL TIME OUT",
+        [0x54] = "CALL PDT DUPLEX ERR",
+        [0x55] = "CALL EMERGENCY REJECT",
+        [0x56] = "CALL USER KILLED",
+        [0x57] = "CALL PDT VIDEO ERR",
+        [0x58] = "CALL MEDIA FAILURE",
+        [0x59] = "CALL USER STUNNED",
+        [0x5A] = "ORIGINAL PASSWORD FAILED",
+        [0x5B] = "SAME AS ORIGINAL PASSWORD",
+        [0x5C] = "CALLED PARTY NOT ACTIVATED SERVICE",
+        [0x5D] = "FORBIDDEN DEU TO NOT GROUP CRATER",
+        [0x5E] = "NO RESOURCE FOR GROUP",
+        [0x5F] = "CALL BUSY",
+        [0x60] = "HEARTBEAT TIMEOUT",
+        [0x61] = "USER LOCKED",
+		[0x62] = "SILENCE_DETECTION",
+        [0x70] = "CALLED PARTY NOT SUPPORT SERVICE",
+        [0x71] = "CALLED PARTY NOT SUPPORT MEDIA SERVICE",
+        [0x72] = "CALLED PARTY NOT SUPPORT LOCATION SERVICE",
+		[0x73] = "USER_PASSWORD_MODIFIED",
+		[0x74] = "USER_SN_NUMBER_MODIFIED",
+		[0x75] = "USER_IMSI_NUMBER_MODIFIED",
+        [0x80] = "CALLED PARTY NOT SUPPORT ENCRYPTION",
+        [0x81] = "CALLED PARTY NOT SUPPORT NON-ENCRYPTION",
+        [0x82] = "NON-ENCRYPTION GROUP NOT SUPPORT ENCRYPTION CALL",
+        [0x83] = "ENCRYPTION GROUP NOT SUPPORT NON-ENCRYPTION CALL",
+        [0x84] = "GROUP CALL HAS EXIST / INCONSISTENT ENCRYPTION TYPE",
+		
+		[0x85] = "KEY_VERSION_NOT_ENABLED",
+		[0x86] = "NO_CORRESPONDING_KEY_VERSION",
+		[0x87] = "PRE_RESOURCE_CONFLICT",
+		[0x88] = "SYSTEM_UPDATE",
+		[0x89] = "INSUFFICIENT_MEDIA_RESOURCES",
+		
+        [0xF0] = "NO PERMISSION",
+        [0xF1] = "NO CALLED USER",
+        [0xF2] = "INTERNAL ERROR",
+        [0xF3] = "UNKNOWN ERROR",
+        [0xF4] = "VIDEO CALL NOT SUPPORTED",
+        [0xF5] = "CALLED USER REJECT",
+        [0xF6] = "USER NOT REGISTERED",
+        [0xF7] = "SESSION NOT EXIST",
+        [0xF8] = "SESSION HEARTBEAT FAILURE",
+        [0xF9] = "PARTIAL SUCCESS",
+        [0xFA] = "CONTENT LENGTH LIMIT EXCEEDED",
+        [0xFB] = "UE KILLED",
+        [0xFC] = "GROUP NUMBER CONFICT",
+        [0xFD] = "GROUP NUMBER EXCEED",
+        [0xFE] = "GROUP CONTAIN DISPATCH USER"
+    }
+    fields.cause = ProtoField.uint8(proto_name .. ".cause", "CAUSE", base.HEX, cause_array, 0xFF)
+
+    --Floor Inform Type enum
+    local floor_inform_array = {
+        [0x00] = "OCCUPIED",
+        [0x01] = "AVAILABLE"
+    }
+    fields.floor_inform = ProtoField.uint8(proto_name .. ".floor_inform", "FLOOR INFORM TYPE", base.HEX, floor_inform_array, 0xFF)
+
+    --Floor Status enum
+    local floor_status_array = {
+        [0x00] = "GRANTED",
+        [0x01] = "QUEUED",
+        [0x02] = "REJECTED"
+    }
+    fields.floor_status = ProtoField.uint8(proto_name .. ".floor_status", "FLOOR STATUS", base.HEX, floor_status_array, 0xFF)
+
+    -- [0x1C]
+    fields.video_framerate1 = ProtoField.bool(proto_name .. ".video_framerate1", "FRAME_RATE_1 (15FPS)", 8, nil, 0x01)
+    fields.video_framerate2 = ProtoField.bool(proto_name .. ".video_framerate2", "FRAME_RATE_2 (20FPS)", 8, nil, 0x02)
+    fields.video_framerate3 = ProtoField.bool(proto_name .. ".video_framerate3", "FRAME_RATE_3 (25FPS)", 8, nil, 0x04)
+    fields.video_framerate4 = ProtoField.bool(proto_name .. ".video_framerate4", "FRAME_RATE_4 (30FPS)", 8, nil, 0x08)
+	fields.video_e2e = ProtoField.bool(proto_name .. ".video_e2e", "VIDEO_E2E", 8, nil, 0x10)
+    -- 注意大端问题 在前面的需要左移8bit
+    fields.video_1080hd     = ProtoField.bool(proto_name .. ".video_1080hd", "1080P (1920*1080)", 16, nil, 0x0100)
+    fields.video_720hd      = ProtoField.bool(proto_name .. ".video_720hd", "720P (1280*720)", 16, nil, 0x0200)
+    fields.video_xga        = ProtoField.bool(proto_name .. ".video_xga", "XGA (1024*768)", 16, nil, 0x0400)
+    fields.video_svga       = ProtoField.bool(proto_name .. ".video_svga", "SVGA (800*600)", 16, nil, 0x0800)
+    fields.video_qcif       = ProtoField.bool(proto_name .. ".video_qcif", "QCIF (176*144)", 16, nil, 0x1000)
+    fields.video_cif        = ProtoField.bool(proto_name .. ".video_cif", "CIF (352*288)", 16, nil, 0x2000)
+    fields.video_vga        = ProtoField.bool(proto_name .. ".video_vga", "VGA (640*480)", 16, nil, 0x4000)
+    fields.video_qvga       = ProtoField.bool(proto_name .. ".video_qvga", "QVGA (320*240)", 16, nil, 0x8000)
+    fields.video_d1         = ProtoField.bool(proto_name .. ".video_d1", "D1 (720*576)", 16, nil, 0x01)
+    fields.video_4cif       = ProtoField.bool(proto_name .. ".video_4cif", "4CIF (704*576)", 16, nil, 0x02)
+
+    local function video_parameter_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		local var1 = 0
+		if tab == nil then 
+			var = buf(0, 1)
+			var1 = buf(1, 2)
+		else
+			var = tabBufNum(tab, tab_offset, 1)
+			var1 = tabBufNum(tab, tab_offset + 1, 2)
+		end
+	
+        root:add(fields.video_framerate1, var)
+        root:add(fields.video_framerate2, var)
+        root:add(fields.video_framerate3, var)
+        root:add(fields.video_framerate4, var)
+		root:add(fields.video_framerate4, var)
+		root:add(fields.video_e2e, var)
+		
+		
+        root:add(fields.video_1080hd, var1)
+        root:add(fields.video_720hd,  var1)
+        root:add(fields.video_xga,    var1)
+        root:add(fields.video_svga,   var1)
+        root:add(fields.video_qcif,   var1)
+        root:add(fields.video_cif,    var1)
+        root:add(fields.video_vga,    var1)
+        root:add(fields.video_qvga,   var1)
+        root:add(fields.video_d1,     var1)
+        root:add(fields.video_4cif,   var1)
+        return len
+    end
+
+	fields.log_levelVal = ProtoField.uint8(proto_name .. ".log_levelVal", "LEVEL_VAL")
+	
+	fields.txt_log = ProtoField.bool(proto_name .. ".txt_log", "TXT_LOG", base.HEX,  nil, 0x01)
+	fields.audio_pkg = ProtoField.bool(proto_name .. ".audio_pkg", "AUDIO_PKG", base.HEX,  nil, 0x02)
+	fields.video_pkg = ProtoField.bool(proto_name .. ".video_pkg", "VIDEO_PKG", base.HEX,  nil, 0x04)
+	fields.pcm_pkg = ProtoField.bool(proto_name .. ".pcm_pkg", "PCM_PKG", base.HEX,  nil, 0x08)
+	
+	fields.timeout = ProtoField.uint8(proto_name .. ".timeout", "TIMEOUT")
+
+	local function log_level_parameter_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		local var1 = 0
+		local var2 = 0
+		if tab == nil then 
+			var = buf(0, 1)
+			var1 = buf(1, 1)
+			var2 = buf(2, 1)
+		else
+			var = tabBufNum(tab, tab_offset, 1)
+			var1 = tabBufNum(tab, tab_offset + 1, 1)
+			var2 = tabBufNum(tab, tab_offset + 2, 1)
+		end
+	
+		root:add(fields.log_levelVal, var)
+		
+		root:add(fields.txt_log, var1)
+        root:add(fields.audio_pkg,  var1)
+        root:add(fields.video_pkg,    var1)
+        root:add(fields.pcm_pkg,   var1)
+		
+		root:add(fields.timeout, var2)
+		return len
+	end
+
+	fields.begin_time_stamp  = ProtoField.uint32(proto_name .. ".begin_time_stamp", "BEGIN_TIME_STAMP", base.DEC)
+	fields.end_time_stamp  = ProtoField.uint32(proto_name .. ".end_time_stamp", "END_TIME_STAMP", base.DEC)
+	
+	local function log_pull_parameter_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		local var1 = 0
+		local var2 = 0
+		if tab == nil then 
+			var = buf(0, 4)
+			var1 = buf(4, 4)
+		else
+			var = tabBufNum(tab, tab_offset, 4)
+			var1 = tabBufNum(tab, tab_offset + 4, 4)
+		end
+	
+		local var = buf(0, 4)
+		root:add(fields.begin_time_stamp, var)
+		
+		var = buf(4, 4)
+		root:add(fields.end_time_stamp, var)
+		return len
+	end
+	
+	fields.msg_cnt  = ProtoField.uint8(proto_name .. ".msg_cnt", "MSG_CNT", base.DEC, nil, 0xf0)
+	fields.msg_seq_num  = ProtoField.uint8(proto_name .. ".msg_seq_num", "MSG_SEQ_NUM", base.DEC, nil, 0x0f)
+	
+	local function message_sq_number_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		if tab == nil then 
+			var = buf(0, 1)
+		else
+			var = tabBufNum(tab, tab_offset, 1)
+		end
+		
+		root:add(fields.msg_cnt, var)
+		root:add(fields.msg_seq_num, var)
+		return len
+	end
+	
+	
+	fields.lmsg_cnt  = ProtoField.uint8(proto_name .. ".lmsg_cnt", "LMSG_CNT", base.DEC, nil, 0xf0)
+	fields.lmsg_seq_num  = ProtoField.uint8(proto_name .. ".lmsg_seq_num", "LMSG_SEQ_NUM", base.DEC, nil, 0x0f)
+	local function lmessage_divide_number_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		if tab == nil then 
+			var = buf(0, 1)
+		else
+			var = tabBufNum(tab, tab_offset, 1)
+		end
+		
+		root:add(fields.lmsg_cnt, var)
+		root:add(fields.lmsg_seq_num, var)
+		return len
+	end
+	
+	
+	
+    --URI Type enum
+    local uri_type_array = {
+        [0x00] = "IP ADDRESS",
+        [0x01] = "HOSTNAME"
+    }
+
+    --IP Address Type enum
+    local ip_type_array = {
+        [0x01] = "IPv4",
+        [0x02] = "IPv6",
+        [0x03] = "IPv4v6",
+        [0x05] = "NonIP"
+    }
+    fields.uri_type     = ProtoField.uint8(proto_name .. ".uri_type", "URI TYPE", base.HEX, uri_type_array)
+    fields.uri_port     = ProtoField.uint16(proto_name .. ".uri_port", "PORT")
+    fields.uri_ip_type  = ProtoField.uint8(proto_name .. ".uri_ip_type", "IP ADDRESS TYPE", base.HEX, ip_type_array)
+    fields.uri_ipv4     = ProtoField.ipv4(proto_name .. ".uri_ipv4", "IPv4 ADDRESS")
+	fields.uri_strIpv4  = ProtoField.string(proto_name .. ".uri_strIpv4", "IPv4 ADDRESS")
+    fields.uri_ipv6     = ProtoField.ipv6(proto_name .. ".uri_ipv6", "IPv6 ADDRESS")
+	fields.uri_strIpv6  = ProtoField.string(proto_name .. ".uri_strIpv6", "IPv6 ADDRESS")
+    fields.uri_hostname = ProtoField.string(proto_name .. ".uri_hostname", "URI HOSTNAME")
+
+    local function ip_addr_dissector(buf, root, len, tab, tab_offset)
+        local offset = 0
+        local ip_type = 0
+		if tab == nil then 
+			ip_type = bit.band(buf(offset, 1):uint(), 0x07)
+			root:add(fields.uri_ip_type, buf(offset, 1))
+			offset = offset + 1
+			
+			if (ip_type == 0x01) then
+				root:add(fields.uri_ipv4, buf(offset, len - offset))
+			elseif (ip_type == 0x02) then
+				root:add(fields.uri_ipv6, buf(offset, len - offset))
+			end
+		else
+			ip_type = bit.band(tabBufNum(tab, tab_offset, 1), 0x07)
+			root:add(fields.uri_ip_type, tabBufNum(tab, tab_offset, 1))
+			tab_offset = tab_offset + 1
+			
+			if (ip_type == 0x01) then
+				root:add(fields.uri_strIpv4, tabBufIpv4(tab, tab_offset, len - 1))
+			elseif (ip_type == 0x02) then
+				root:add(fields.uri_strIpv6, tabBufIpv6(tab, tab_offset, len - 1))
+			end
+		end
+        return len
+    end
+
+
+	fields.ue_property_RTPReq  = ProtoField.uint8(proto_name .. ".ue_property_RTPReq", "RTP_REQ", base.DEC, nil, 0x01)
+	fields.ue_property_ROIPReg  = ProtoField.uint8(proto_name .. ".ue_property_ROIPReg", "ROIP_AUDIO_REG", base.DEC, nil, 0x02)
+	local function ue_property_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		if tab == nil then 
+			var = buf(0, 1)
+		else
+			var = tabBufNum(tab, tab_offset, 1)
+		end
+		
+		root:add(fields.ue_property_RTPReq, var)
+		root:add(fields.ue_property_ROIPReg, var)
+		return len
+	end
+
+    local function server_uri_dissector(buf, root, len, tab, tab_offset)
+        local offset = 0
+        local uri_type = 0
+		if tab == nil then 
+			uri_type = buf(offset, 1):uint()
+	        root:add(fields.uri_type, buf(offset, 1))
+			offset = offset + 1
+
+			root:add(fields.uri_port, buf(offset, 2))
+			offset = offset + 2
+			
+			if (0x00 == uri_type) then
+				--IP Address
+				local ip_type = buf(offset, 1):uint()
+				root:add(fields.uri_ip_type, buf(offset, 1))
+				offset = offset + 1
+				
+				if (ip_type == 0x01) then
+					root:add(fields.uri_ipv4, buf(offset, len - offset))
+				elseif (ip_type == 0x02) then
+					root:add(fields.uri_ipv6, buf(offset, len - offset))
+				end
+			else
+				--Hostname
+				-- ignore ip addr type
+				offset = offset + 1
+				root:add(fields.uri_hostname, buf(offset, len - offset))
+			end
+		else
+			offset = tab_offset
+			uri_type = tabBufNum(tab, tab_offset, 1)
+	        root:add(fields.uri_type, tabBufNum(tab, tab_offset, 1))
+			tab_offset = tab_offset + 1
+
+			root:add(fields.uri_port, tabBufNum(tab, tab_offset, 2))
+			tab_offset = tab_offset + 2
+		
+			if (0x00 == uri_type) then
+				--IP Address
+				local ip_type = tabBufNum(tab, tab_offset, 1)
+				root:add(fields.uri_ip_type, tabBufNum(tab, tab_offset, 1))
+				tab_offset = tab_offset + 1
+					
+				if (ip_type == 0x01) then
+					root:add(fields.uri_strIpv4, tabBufIpv4(tab, tab_offset, len - tab_offset + offset))
+				elseif (ip_type == 0x02) then
+					root:add(fields.uri_strIpv6, tabBufIpv6(tab, tab_offset, len - tab_offset + offset))
+				end
+			else
+				--Hostname
+				-- ignore ip addr type
+				tab_offset = tab_offset + 1
+				root:add(fields.uri_hostname, tabBufStr(tab, tab_offset, len - tab_offset))
+			end
+		end
+		
+        return len
+    end
+
+    --Message Container Type enum
+    local msg_container_type_array = {
+        [0x01] = "STATUS_MESSAGE",
+        [0x02] = "E2E_KEY",
+        [0x03] = "POSITION",
+        [0x04] = "RESERVE",
+        [0xF0] = "IMAGE",
+        [0xF1] = "AUDIO",
+        [0xF2] = "VIDEO",
+        [0xF3] = "FILE",
+        [0xF4] = "TEXT",
+        [0xF5] = "LONG_MSG",
+        [0xFA] = "MULTIPLE_MESSAGES"
+    }
+    fields.msg_container_type = ProtoField.uint8(proto_name .. ".msg_container_type", "MESSAGE CONTAINER TYPE", base.HEX, msg_container_type_array, 0xFF)
+
+    --Result enum
+    local result_array = {
+        [0x00] = "SUCCESS",
+        [0x01] = "FAILURE"
+    }
+    fields.result = ProtoField.uint8(proto_name .. ".result", "RESULT", base.HEX, result_array, 0xFF)
+
+    --Stun Status enum
+    local stun_status_array = {
+        [0x00] = "ACTIVE",
+        [0x01] = "STUNNED"
+    }
+    fields.stun_status = ProtoField.uint8(proto_name .. ".stun_status", "STUN_STATUS", base.HEX, stun_status_array, 0xFF)
+
+    --Stun Type enum
+    local stun_type_array = {
+        [0x00] = "KILL",
+        [0x01] = "STUN",
+        [0x02] = "RELIVE"
+    }
+    fields.stun_type = ProtoField.uint8(proto_name .. ".stun_type", "STUN_TYPE", base.HEX, stun_type_array, 0xFF)
+
+    fields.audio_codec_amr   = ProtoField.bool(proto_name .. ".audio_codec_amr", "AMR", 8, nil, 0x01)
+    fields.audio_codec_nvoc  = ProtoField.bool(proto_name .. ".audio_codec_nvoc", "NVOC", 8, nil, 0x02)
+    fields.audio_codec_amrwb = ProtoField.bool(proto_name .. ".audio_codec_amrwb", "AMR-WB", 8, nil, 0x04)
+    fields.audio_codec_acelp = ProtoField.bool(proto_name .. ".audio_codec_acelp", "ACELP", 8, nil, 0x08)
+    fields.audio_codec_pcmu  = ProtoField.bool(proto_name .. ".audio_codec_pcmu", "PCMU", 8, nil, 0x10)
+    fields.audio_codec_pcma  = ProtoField.bool(proto_name .. ".audio_codec_pcma", "PCMA", 8, nil, 0x20)
+    fields.audio_codec_ambe  = ProtoField.bool(proto_name .. ".audio_codec_ambe", "AMBE++", 8, nil, 0x40)
+    fields.audio_codec_evs   = ProtoField.bool(proto_name .. ".audio_codec_evs", "EVS", 8, nil, 0x80)
+
+    local function audio_codec_dissector(buf, root, len, tab, tab_offset)
+	    local var = 0
+		if tab == nil then 
+			var = buf(0, len)
+		else
+			var = tabBufNum(tab, tab_offset, len)
+		end
+        root:add(fields.audio_codec_amr,   var)
+        root:add(fields.audio_codec_nvoc,  var)
+        root:add(fields.audio_codec_amrwb, var)
+        root:add(fields.audio_codec_acelp, var)
+        root:add(fields.audio_codec_pcmu,  var)
+        root:add(fields.audio_codec_pcma,  var)
+        root:add(fields.audio_codec_ambe,  var)
+        root:add(fields.audio_codec_evs,   var)
+        return len
+    end
+
+	fields.floormediaA   = ProtoField.bool(proto_name .. ".requestor_audio_media", "REQUESTOR_AUDIO_MEDIA", 8, nil, 0x80)
+    fields.floormediaV  = ProtoField.bool(proto_name .. ".requestor_video_media", "REQUESTOR_VIDEO_MEDIA", 8, nil, 0x40)
+	
+	local function floor_media_indicator_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		if tab == nil then 
+			var = buf(0, len)
+		else
+			var = tabBufNum(tab, tab_offset, len)
+		end
+        root:add(fields.floormediaA, var)
+        root:add(fields.floormediaV, var)
+        return len
+	end
+
+
+    fields.video_codec_vp8   = ProtoField.bool(proto_name .. ".video_codec_vp8", "VP8", 8, nil, 0x01)
+    fields.video_codec_h264  = ProtoField.bool(proto_name .. ".video_codec_h264", "H264", 8, nil, 0x02)
+    fields.video_codec_mpeg4 = ProtoField.bool(proto_name .. ".video_codec_mpeg4", "MPEG4", 8, nil, 0x04)
+    fields.video_codec_h263  = ProtoField.bool(proto_name .. ".video_codec_h263", "H263", 8, nil, 0x08)
+    fields.video_codec_h265  = ProtoField.bool(proto_name .. ".video_codec_h265", "H265", 8, nil, 0x10)
+
+    local function video_codec_dissector(buf, root, len, tab, tab_offset)
+        local var = 0
+		if tab == nil then 
+			var = buf(0, len)
+		else
+			var = tabBufNum(tab, tab_offset, len)
+		end
+        root:add(fields.video_codec_vp8,   var)
+        root:add(fields.video_codec_h264,  var)
+        root:add(fields.video_codec_mpeg4, var)
+        root:add(fields.video_codec_h263,  var)
+        root:add(fields.video_codec_h265,  var)
+        return len
+    end
+
+    --Trunking Register Type enum
+    local register_type_array = {
+        [0x00] = "INITIAL REGISTER",
+        [0x01] = "PERIODIC REGISTER",
+        [0x02] = "IDC AAD REGISTER",
+        [0x03] = "HOME ID REGISTER",
+        [0x04] = "SN REGISTER"
+    }
+    fields.register_type = ProtoField.uint8(proto_name .. ".register_type", "TRUNKING_REGISTER_TYPE", base.HEX, register_type_array, 0xFF)
+
+    fields.ue_capability_e2ee           = ProtoField.bool(proto_name .. ".ue_capability_e2ee", "E2E ENCRYPTION", 8, nil, 0x01)
+    fields.ue_capability_compress       = ProtoField.bool(proto_name .. ".ue_capability_compress", "PDCP COMPRESS", 8, nil, 0x02)
+    fields.ue_capability_arm_over_pdcp  = ProtoField.bool(proto_name .. ".ue_capability_arm_over_pdcp", "AMR OVER PDCP", 8, nil, 0x04)
+    fields.ue_capability_half_duplex    = ProtoField.bool(proto_name .. ".ue_capability_half_duplex", "Half-Duplex", 8, nil, 0x08)
+    fields.ue_capability_nas            = ProtoField.bool(proto_name .. ".ue_capability_nas", "NAS VIDEO", 8, nil, 0x10)
+    fields.ue_capability_modify_passwd  = ProtoField.bool(proto_name .. ".ue_capability_modify_passwd", "ALLOW MODIFY PASSWORD", 8, nil, 0x20)
+
+    local function ue_capability_dissector(buf, root, len, tab, tab_offset)
+        local var = 0
+		if tab == nil then 
+			var = buf(0, len)
+		else
+			var = tabBufNum(tab, tab_offset, len)
+		end
+        root:add(fields.ue_capability_e2ee,          var)
+        root:add(fields.ue_capability_compress,      var)
+        root:add(fields.ue_capability_arm_over_pdcp, var)
+        root:add(fields.ue_capability_half_duplex,   var)
+        root:add(fields.ue_capability_nas,           var)
+        root:add(fields.ue_capability_modify_passwd, var)
+        return len
+    end
+
+    --Product Type enum
+    local product_type_array = {
+        [0x01] = "P-POC3000",
+        [0x02] = "P-POC6000",
+        [0x03] = "P-POC3+6"
+    }
+    fields.client_version_family = ProtoField.uint8(proto_name .. ".client_version_family", "Product", base.HEX, product_type_array)
+    fields.client_version        = ProtoField.string(proto_name .. ".client_version", "Version")
+
+    local function version_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		if tab == nil then 
+			var = buf(1, 2):uint()
+			root:add(fields.client_version_family, buf(0, 1))
+			root:add(
+				fields.client_version,
+				buf(1, 2),
+				string.format(
+					"R%d.%d.%d.%d",
+					bit.shr(bit.band(var, 0xF000), 12),
+					bit.shr(bit.band(var, 0x0F00),  8),
+					bit.shr(bit.band(var,   0xF0),  4),
+					bit.band(var, 0x0F)
+				)
+			)
+		else
+			var = tabBufNum(tab, tab_offset + 1, 2)
+			root:add(fields.client_version_family, tabBufNum(tab, tab_offset, 1))
+			root:add(
+				fields.client_version,
+				tabBufStr(tab, tab_offset + 1, 2),
+				string.format(
+					"R%d.%d.%d.%d",
+					bit.shr(bit.band(var, 0xF000), 12),
+					bit.shr(bit.band(var, 0x0F00),  8),
+					bit.shr(bit.band(var,   0xF0),  4),
+					bit.band(var, 0x0F)
+				)
+			)
+		end
+	
+        return len
+    end
+
+    --Audio Traffic Mode enum
+    local audio_traffic_mode_array = {
+        [0x00] = "20ms",
+        [0x01] = "60ms",
+        [0x02] = "120ms"
+    }
+    fields.audio_traffic_mode = ProtoField.uint8(proto_name .. ".audio_traffic_mode", "Audio Traffic Mode", base.HEX, audio_traffic_mode_array, 0xFF)
+
+    local regroup_opt_array = {
+        [0x01] = "CREATE_GROUP",
+        [0x02] = "ADD_MEMBER",
+        [0x03] = "DELETE_MEMBER",
+        [0x04] = "DELETE_GROUP",
+        [0x05] = "MODIFY_GROUP"
+    }
+    fields.regroup_opt = ProtoField.uint8(proto_name .. ".regroup_opt", "REGROUP_OPT", base.HEX, regroup_opt_array, 0xFF)
+
+    --Call Role enum
+    local call_role_array = {
+        [0x00] = "CALLED",
+        [0x01] = "CALLER"
+    }
+    fields.call_role = ProtoField.uint8(proto_name .. ".call_role", "CALL_ROLE", base.HEX, call_role_array, 0xFF)
+
+    --Content Type enum
+    local content_type_array = {
+        [0x00] = "TEXT_PLAIN",
+        [0x01] = "TEXT_GZIP" 
+    }
+    fields.content_type = ProtoField.uint8(proto_name .. ".content_type", "CONTENT TYPE", base.HEX, content_type_array, 0xFF)
+
+    fields.status_code        = ProtoField.uint8(proto_name .. ".status_code", "STATUS CODE")
+    fields.status_description = ProtoField.string(proto_name .. ".status_description", "DESCRIPTION")
+
+    local function status_msg_config_dissector(buf, root, len, tab, tab_offset)
+		local offset = 0
+		if tab == nil then 
+			root:add(fields.status_code, buf(offset, 1))
+			offset = offset + 1
+			root:add(fields.status_description, buf(offset, len - 1))
+		else
+			root:add(fields.status_code, tabBufNum(tab, tab_offset, 1))
+			tab_offset = tab_offset + 1
+			root:add(fields.status_description, tabBufNum(tab, tab_offset, len - 1))
+		end
+	
+        return len
+    end
+
+    --Camera Type enum
+    local camera_type_array = {
+        [0x00] = "REAR_CAMERA",
+        [0x01] = "FRONT_CAMERA",
+        [0x07] = "VM220_EXTERNAL_CAMERA",
+        [0x0A] = "VM680_EXTERNAL_CAMERA"
+    }
+    fields.camera_type = ProtoField.uint8(proto_name .. ".camera_type", "CAMERA_TYPE", base.HEX, camera_type_array, 0xFF)
+
+    fields.evs_bitrate1     = ProtoField.bool(proto_name .. ".evs_bitrate1", "BIT_RATE_1 (5.9Kbps)", 16, nil, 0x0100)
+    fields.evs_bitrate2     = ProtoField.bool(proto_name .. ".evs_bitrate2", "BIT_RATE_2 (7.2Kbps)", 16, nil, 0x0200)
+    fields.evs_bitrate3     = ProtoField.bool(proto_name .. ".evs_bitrate3", "BIT_RATE_3 (8.05Kbps)", 16, nil, 0x0400)
+    fields.evs_bitrate4     = ProtoField.bool(proto_name .. ".evs_bitrate4", "BIT_RATE_4 (9.6Kbps)", 16, nil, 0x0800)
+    fields.evs_bitrate5     = ProtoField.bool(proto_name .. ".evs_bitrate5", "BIT_RATE_5 (13.2Kbps)", 16, nil, 0x1000)
+    fields.evs_bitrate6     = ProtoField.bool(proto_name .. ".evs_bitrate6", "BIT_RATE_6 (16.4Kbps)", 16, nil, 0x2000)
+    fields.evs_bitrate7     = ProtoField.bool(proto_name .. ".evs_bitrate7", "BIT_RATE_7 (24.4Kbps)", 16, nil, 0x4000)
+    fields.evs_bitrate8     = ProtoField.bool(proto_name .. ".evs_bitrate8", "BIT_RATE_8 (32Kbps)", 16, nil, 0x8000)
+    fields.evs_bitrate9     = ProtoField.bool(proto_name .. ".evs_bitrate9", "BIT_RATE_9 (48Kbps)", 16, nil, 0x010)
+    fields.evs_bitrate10    = ProtoField.bool(proto_name .. ".evs_bitrate10", "BIT_RATE_10 (64Kbps)", 16, nil, 0x02)
+    fields.evs_bitrate11    = ProtoField.bool(proto_name .. ".evs_bitrate11", "BIT_RATE_11 (96Kbps)", 16, nil, 0x04)
+    fields.evs_bitrate12    = ProtoField.bool(proto_name .. ".evs_bitrate12", "BIT_RATE_12 (128Kbps)", 16, nil, 0x08)
+    -- fields.evs_samplerate1  = ProtoField.bool(proto_name .. ".evs_samplerate1", "SAMPLE_RATE_1 (8kHZ)", 16, nil, 0x01)
+    -- fields.evs_samplerate2  = ProtoField.bool(proto_name .. ".evs_samplerate2", "SAMPLE_RATE_2 (16kHZ)", 16, nil, 0x01)
+    -- fields.evs_samplerate3  = ProtoField.bool(proto_name .. ".evs_samplerate3", "SAMPLE_RATE_3 (32kHZ)", 16, nil, 0x01)
+    -- fields.evs_samplerate4  = ProtoField.bool(proto_name .. ".evs_samplerate4", "SAMPLE_RATE_4 (48kHZ)", 16, nil, 0x01)
+    fields.evs_ptime1       = ProtoField.bool(proto_name .. ".evs_ptime1", "PTIME_1 (20ms INTERVAL)", 8, nil, 0x01)
+    fields.evs_ptime2       = ProtoField.bool(proto_name .. ".evs_ptime2", "PTIME_2 (40ms INTERVAL)", 8, nil, 0x02)
+    fields.evs_ptime3       = ProtoField.bool(proto_name .. ".evs_ptime3", "PTIME_3 (60ms INTERVAL)", 8, nil, 0x03)
+    fields.evs_ptime4       = ProtoField.bool(proto_name .. ".evs_ptime4", "PTIME_4 (120ms INTERVAL)", 8, nil, 0x04)
+    fields.evs_overpdcp     = ProtoField.bool(proto_name .. ".evs_overpdcp", "EVS_OVER_PDCP", 8, nil, 0x40)
+
+    local function evs_parameter_dissector(buf, root, len, tab, tab_offset)
+	    local var = 0
+		local var1 = 0
+		if tab == nil then 
+			var = buf(0, 2)
+			var1 = buf(2, len - 2)
+		else
+			var = tabBufNum(tab, tab_offset, 2)
+			var1 = tabBufNum(tab, tab_offset + 2, len - 2)
+		end
+	
+        root:add(fields.evs_bitrate1, var)
+        root:add(fields.evs_bitrate2, var)
+        root:add(fields.evs_bitrate3, var)
+        root:add(fields.evs_bitrate4, var)
+        root:add(fields.evs_bitrate5, var)
+        root:add(fields.evs_bitrate6, var)
+        root:add(fields.evs_bitrate7, var)
+        root:add(fields.evs_bitrate8, var)
+        root:add(fields.evs_bitrate9, var)
+        root:add(fields.evs_bitrate10, var)
+        root:add(fields.evs_bitrate11, var)
+        root:add(fields.evs_bitrate12, var)
+
+        root:add(fields.evs_ptime1, var1)
+        root:add(fields.evs_ptime2, var1)
+        root:add(fields.evs_ptime3, var1)
+        root:add(fields.evs_ptime4, var1)
+        root:add(fields.evs_overpdcp, var1)
+        return len
+    end
+
+    local function bcd_dissector(buf, root, len, tab, tab_offset)
+        local offset = 0
+        local str_list = {}
+        local var = 0
+        local bit_var = 0
+
+        while offset < len do
+			if tab == nil then 
+				var = buf(offset, 1):uint()
+			else
+				var = tabBufNum(tab, tab_offset, 1)
+				tab_offset = tab_offset + 1	
+			end
+            --root:add(fields.debug_number, var)
+            bit_var = bit.band(var, 0x0F)
+			
+            if bit_var == 0x0F then
+                break
+            else
+                table.insert(str_list, string.format("%x", bit_var))
+            end
+            
+            bit_var = bit.shr(bit.band(var, 0xF0), 4)
+            if bit_var == 0x0F then
+                break
+            else
+                table.insert(str_list, string.format("%x", bit_var))
+            end
+            offset = offset + 1
+        end
+		
+		if tab == nil then 
+			root:add(fields.ie_value_str,  buf(0, len), table.concat(str_list))
+		else
+			root:add(fields.ie_value_str,  buf(0), table.concat(str_list))
+		end
+     
+        return len
+    end
+
+    --Heartbeat Type enum
+    local heartbeat_type_array = {
+        [0x00] = "STATUS",
+        [0x01] = "SESSION"
+    }
+    fields.hearbeat_type = ProtoField.uint8(proto_name .. ".hearbeat_type", "HEARTBEAT TYPE", base.HEX, heartbeat_type_array)
+
+    --Dialing Rule enum
+    local dialing_rule_array = {
+        [0x00] = "PoC",
+        [0x01] = "DMR",
+        [0x02] = "CPS-P3",
+        [0x03] = "CPS-ZJ"
+    }
+    fields.dialing_rule = ProtoField.uint8(proto_name .. ".dialing_rule", "DIALING_RULE", base.HEX, dialing_rule_array, 0xFF)
+
+    fields.amrwb_bitrate1 = ProtoField.bool(proto_name .. ".amrwb_bitrate1", "BIT_RATE_1 (6.6Kbps)", 16, nil, 0x0100)
+    fields.amrwb_bitrate2 = ProtoField.bool(proto_name .. ".amrwb_bitrate2", "BIT_RATE_2 (8.85Kbps)", 16, nil, 0x0200)
+    fields.amrwb_bitrate3 = ProtoField.bool(proto_name .. ".amrwb_bitrate3", "BIT_RATE_3 (12.65Kbps)", 16, nil, 0x0400)
+    fields.amrwb_bitrate4 = ProtoField.bool(proto_name .. ".amrwb_bitrate4", "BIT_RATE_4 (14.25Kbps)", 16, nil, 0x0800)
+    fields.amrwb_bitrate5 = ProtoField.bool(proto_name .. ".amrwb_bitrate5", "BIT_RATE_5 (15.85Kbps)", 16, nil, 0x1000)
+    fields.amrwb_bitrate6 = ProtoField.bool(proto_name .. ".amrwb_bitrate6", "BIT_RATE_6 (18.25Kbps)", 16, nil, 0x2000)
+    fields.amrwb_bitrate7 = ProtoField.bool(proto_name .. ".amrwb_bitrate7", "BIT_RATE_7 (19.85Kbps)", 16, nil, 0x4000)
+    fields.amrwb_bitrate8 = ProtoField.bool(proto_name .. ".amrwb_bitrate8", "BIT_RATE_8 (23.05Kbps)", 16, nil, 0x8000)
+    fields.amrwb_bitrate9 = ProtoField.bool(proto_name .. ".amrwb_bitrate9", "BIT_RATE_9 (23.85Kbps)", 16, nil, 0x01)
+    fields.amrwb_ptime1   = ProtoField.bool(proto_name .. ".amrwb_ptime1", "PTIME_1 (20ms INTERVAL)", 8, nil, 0x01)
+    fields.amrwb_ptime2   = ProtoField.bool(proto_name .. ".amrwb_ptime2", "PTIME_2 (40ms INTERVAL)", 8, nil, 0x02)
+    fields.amrwb_ptime3   = ProtoField.bool(proto_name .. ".amrwb_ptime3", "PTIME_3 (60ms INTERVAL)", 8, nil, 0x04)
+    fields.amrwb_ptime4   = ProtoField.bool(proto_name .. ".amrwb_ptime4", "PTIME_4 (120ms INTERVAL)", 8, nil, 0x08)
+    fields.amrwb_format1  = ProtoField.bool(proto_name .. ".amrwb_format1", "PAYLOAD_FORMAT_1 (BYTE ALIGNED)", 8, nil, 0x10)
+    fields.amrwb_format2  = ProtoField.bool(proto_name .. ".amrwb_format2", "PAYLOAD_FORMAT_2 (BANDWIDTH EFFICIENT)", 8, nil, 0x20)
+    fields.amrwb_encrypt_lib = ProtoField.bool(proto_name .. ".amrwb_encrypt_lib", "AmrwbEncryptLib", 8, nil, 0x40)
+
+    local function amrwb_parameter_dissector(buf, root, len, tab, tab_offset)
+		local var = 0
+		local var1 = 0
+		if tab == nil then 
+			var = buf(0, 2)
+			var1 = buf(2, len - 2)
+		else
+			var = tabBufNum(tab, tab_offset, 2)
+			var1 = tabBufNum(tab, tab_offset + 2, len - 2)
+		end
+        root:add(fields.amrwb_bitrate1, var)
+        root:add(fields.amrwb_bitrate2, var)
+        root:add(fields.amrwb_bitrate3, var)
+        root:add(fields.amrwb_bitrate4, var)
+        root:add(fields.amrwb_bitrate5, var)
+        root:add(fields.amrwb_bitrate6, var)
+        root:add(fields.amrwb_bitrate7, var)
+        root:add(fields.amrwb_bitrate8, var)
+        root:add(fields.amrwb_bitrate9, var)
+
+        root:add(fields.amrwb_ptime1,   var1)
+        root:add(fields.amrwb_ptime2,   var1)
+        root:add(fields.amrwb_ptime3,   var1)
+        root:add(fields.amrwb_ptime4,   var1)
+        root:add(fields.amrwb_format1,  var1)
+        root:add(fields.amrwb_format2,  var1)
+        root:add(fields.amrwb_encrypt_lib, var1)
+        return len
+    end
+
+    --Video Resolution Ratio Priority
+    local video_resolution_ratio_priority_array = {
+        [0x01] = "1080P HD(1920*1080)",
+        [0x02] = "720P HD(1280*720)",
+        [0x03] = "XGA (1024*768)",
+        [0x04] = "SVGA (800*600)",
+        [0x05] = "QCIF (176*144)",
+        [0x06] = "CIF (352*288)",
+        [0x07] = "VGA (640*480)",
+        [0x08] = "QVGA (320*240)",
+        [0x09] = "4CIF (704*576)",
+        [0x0A] = "D1 (720*576)"
+    }
+    fields.video_resolution_ratio_priority = ProtoField.uint8(proto_name .. ".video_resolution_ratio_priority", "Video Resolution Ratio Priority", base.HEX, video_resolution_ratio_priority_array, 0xFF)
+
+    local function video_resolution_ratio_priority_dissector(buf, root, len ,tab, tab_offset)
+        local offset = 0
+        while (offset < len) do
+			if tab == nil then 
+				root:add(fields.video_resolution_ratio_priority, buf(offset, 1))
+			else
+				root:add(fields.video_resolution_ratio_priority, tabBufNum(tab, tab_offset, 1))
+				tab_offset = tab_offset + 1 
+			end
+            
+            offset = offset + 1
+        end
+        return len
+    end
+
+
+	fields.numberDE1 = ProtoField.uint8(proto_name .. ".Number_Digit_End_Mark_1", "Number Digit/End Mark 1", base.DEC, nil, 0x0F)
+	fields.numberDE2 = ProtoField.uint8(proto_name .. ".Number_Digit_End_Mark_2", "Number Digit/End Mark 2", base.DEC, nil, 0xF0)
+	fields.numberDE3 = ProtoField.uint8(proto_name .. ".Number_Digit_End_Mark_3", "Number Digit/End Mark 3", base.DEC, nil, 0x0F)
+	fields.numberDE4 = ProtoField.uint8(proto_name .. ".Number_Digit_End_Mark_4", "Number Digit/End Mark 4", base.DEC, nil, 0xF0)
+	fields.numberDE5 = ProtoField.uint8(proto_name .. ".Number_Digit_End_Mark_5", "Number Digit/End Mark 5", base.DEC, nil, 0x0F)
+	fields.numberDE6 = ProtoField.uint8(proto_name .. ".Number_Digit_End_Mark_6", "Number Digit/End Mark 6", base.DEC, nil, 0xF0)
+    local function invitation_code_dissector(buf, root, len ,tab, tab_offset)
+        local offset = 0
+        while (offset < len) do
+			if tab == nil then 
+				root:add(fields.debug_number, buf(offset, 1))
+				root:add(fields.numberDE1, buf(offset, 1))
+				root:add(fields.numberDE2, buf(offset, 1))
+				offset = offset + 1
+				
+				root:add(fields.numberDE3, buf(offset, 1))
+				root:add(fields.numberDE4, buf(offset, 1))
+				offset = offset + 1
+				
+				root:add(fields.numberDE5, buf(offset, 1))
+				root:add(fields.numberDE6, buf(offset, 1))
+				offset = offset + 1
+				
+			else
+				root:add(fields.numberDE1, tabBufNum(tab, tab_offset, 1))
+				root:add(fields.numberDE2, tabBufNum(tab, tab_offset, 1))
+				tab_offset = tab_offset + 1 
+				root:add(fields.numberDE3, tabBufNum(tab, tab_offset, 1))
+				root:add(fields.numberDE4, tabBufNum(tab, tab_offset, 1))
+				tab_offset = tab_offset + 1 
+				root:add(fields.numberDE5, tabBufNum(tab, tab_offset, 1))
+				root:add(fields.numberDE6, tabBufNum(tab, tab_offset, 1))
+				tab_offset = tab_offset + 1 
+				offset = offset + 3
+			end
+        end
+        return len
+    end
+
+	fields.heartbeatdate_type = ProtoField.uint8(proto_name .. ".HeartBeat_Type", "HeartBeat Type",base.HEX, nil, 0x01)
+	fields.heartbeat_intval = ProtoField.uint8(proto_name .. ".HeartBeat_Intval", "HeartBeat Intval", base.HEX, nil, 0xFE)
+    local function hearbeat_dissector(buf, root, len ,tab, tab_offset)
+        local offset = 0
+        while (offset < len) do
+			if tab == nil then 
+				root:add(fields.heartbeatdate_type, buf(offset, 1))
+				root:add(fields.heartbeat_intval, buf(offset, 1))
+			else
+				root:add(fields.heartbeat_type, tabBufNum(tab, tab_offset, 1))
+				root:add(fields.heartbeat_intval, tabBufNum(tab, tab_offset, 1))
+				tab_offset = tab_offset + 1 
+			end
+            
+            offset = offset + 1
+        end
+        return len
+    end
+
+    --Register Service Type enum
+    local register_service_type_array = {
+        [0x00] = "AUDIO + VIDEO",
+        [0x01] = "AUDIO",
+        [0x02] = "VIDEO"
+    }
+    fields.register_service_type = ProtoField.uint8(proto_name .. ".register_service_type", "REGISTER_SERVICE_TYPE", base.HEX, register_service_type_array, 0xFF)
+
+    fields.status_call_type     = ProtoField.uint8(proto_name .. ".status_call_type", "CALL TYPE")
+    fields.status_fid_flag      = ProtoField.uint8(proto_name .. ".status_fid_flag", "FID FLAG")
+    fields.status_st_emergency  = ProtoField.uint8(proto_name .. ".status_st_emergency", "ST EMERGENCY")
+    fields.status_so_sd         = ProtoField.uint8(proto_name .. ".status_so_sd", "SO SD")
+    fields.status_call_mode     = ProtoField.uint8(proto_name .. ".status_call_mode", "CALL MODE")
+
+    local function status_parameter_dissector(buf, root, len, tab, tab_offset)
+        local offset = 0
+        local var = 0
+        local end_cong = len - 1
+        while (offset < end_cong) do
+			if tab == nil then 
+				var = buf(offset, 1):uint()
+				offset = offset + 1
+				if (var == string.byte("t")) then
+					root:add(fields.status_call_type, buf(offset, 1))
+				elseif (var == string.byte("g")) then
+					root:add(fields.status_fid_flag, buf(offset, 1))
+				elseif (var == string.byte("c")) then
+					root:add(fields.status_st_emergency, buf(offset, 1))
+				elseif (var == string.byte("s")) then
+					root:add(fields.status_so_sd, buf(offset, 1))
+				elseif (var == string.byte("m")) then
+					root:add(fields.status_call_mode, buf(offset, 1))
+				end
+			else
+				var = tabBufNum(tab, tab_offset, 1)
+				tab_offset = tab_offset + 1
+				offset = offset + 1
+				if (var == string.byte("t")) then
+					root:add(fields.status_call_type, tabBufNum(tab, tab_offset, 1))
+				elseif (var == string.byte("g")) then
+					root:add(fields.status_fid_flag, tabBufNum(tab, tab_offset, 1))
+				elseif (var == string.byte("c")) then
+					root:add(fields.status_st_emergency, tabBufNum(tab, tab_offset, 1))
+				elseif (var == string.byte("s")) then
+					root:add(fields.status_so_sd, tabBufNum(tab, tab_offset, 1))
+				elseif (var == string.byte("m")) then
+					root:add(fields.status_call_mode, tabBufNum(tab, tab_offset, 1))
+				end
+				tab_offset = tab_offset + 1 
+			end
+            offset = offset + 1
+        end
+        return len
+    end
+
+    fields.hash_md5   = ProtoField.string(proto_name .. ".hash_md5", "md5")
+    fields.hash_crc32 = ProtoField.string(proto_name .. ".hash_crc32", "crc32")
+
+    local function hash_dissector(buf, root, len, tab, tab_offset)
+        local str_list = {}
+        local offset = 0
+        local var = 0
+		if tab == nil then 
+			while offset < len do
+				var = buf(offset, 1):uint()
+				-- 此处可以调整高低位
+				table.insert(str_list, string.format("%x", bit.shr(bit.band(var, 0xF0), 4)))
+				table.insert(str_list, string.format("%x", bit.band(var, 0x0F)))
+				offset = offset + 1
+			end
+			if len >= 16 then
+				root:add(fields.hash_md5, buf(0, 16), table.concat({table.unpack(str_list, 1, 32)}))
+				if len > 16 then
+					root:add(fields.hash_crc32, buf(16, len - 16), table.concat({table.unpack(str_list, 33)}))
+				else
+					root:add(fields.hash_crc32, "")
+				end
+			else
+				root:add(fields.hash_md5, buf(0, len), table.concat(str_list))
+				root:add(fields.hash_crc32, "")
+			end
+		else
+			while offset < len do
+				var = tabBufNum(tab, tab_offset, 1)
+				-- 此处可以调整高低位
+				table.insert(str_list, string.format("%x", bit.shr(bit.band(var, 0xF0), 4)))
+				table.insert(str_list, string.format("%x", bit.band(var, 0x0F)))
+				tab_offset = tab_offset + 1 
+				offset = offset + 1
+			end
+			if len >= 16 then
+				root:add(fields.hash_md5, tabBufNum(tab, tab_offset, 16), table.concat({table.unpack(str_list, 1, 32)}))
+				if len > 16 then
+					root:add(fields.hash_crc32, tabBufNum(tab, tab_offset + 16, len - 16), table.concat({table.unpack(str_list, 33)}))
+				else
+					root:add(fields.hash_crc32, "")
+				end
+			else
+				root:add(fields.hash_md5, tabBufNum(tab, tab_offset, len), table.concat(str_list))
+				root:add(fields.hash_crc32, "")
+			end
+		end
+		
+
+        return len
+    end
+
+    --Video Attribute
+    local video_attribute_array = {
+        [0x00] = "LANDSCAPE",
+        [0x01] = "PORTRAIT"
+    }
+    fields.video_attribute_orient = ProtoField.uint8(proto_name .. ".video_attribute_orient", "Orient", base.HEX, video_attribute_array)
+
+    local function video_attribute_dissector(buf, root, len, tab, tab_offset)
+		if tab == nil then 
+			root:add(fields.video_attribute_orient, buf(0, len))
+		else
+			root:add(fields.video_attribute_orient, tabBufNum(tab, tab_offset, len))
+		end
+        return len
+    end
+
+    -- 解析 IE 结构表
+    -- IE Code = {IE Name, dissector type, extra info}
+    -- dissector type:
+        -- list: sub is the TLVs with same iei
+        -- mix: sub is the TLVs with different iei
+        -- fields: fields[name]
+        -- enum: dynamic create fields[ie_name.lower()]
+        -- dissector: call dissector function
+        -- tv: call special dissector function
+        -- str
+        -- hex
+        -- dec
+    local ie_array =
+    {
+        [0x01] = {"AMR_PARAMETER",              "dissector",            amr_parameter_dissector},
+        [0x02] = {"AUDIO_CODEC_CAPABILITY",     "mix"},
+        [0x03] = {"AUDIO_DESCRIPTION",          "mix"},
+        [0x04] = {"CALL_ATTRIBUTE",             "dissector",            call_attribute_dissector},
+        [0x05] = {"CALL_ID",                    "callid"},
+        [0x07] = {"CALLED_UID",                 "str"},
+        [0x06] = {"CALL_TYPE",                  "fields",               fields.call_type},
+        [0x08] = {"CALLING_UID",                "str"},
+        [0x09] = {"CAUSE",                      "fields",               fields.cause},
+        [0x0A] = {"E2E_KEY",                    "dissector",            e2e_key_dissector},
+        [0x0B] = {"EMERGENCY_UID",              "str"},
+        [0x0C] = {"FLOOR_INFORM_TYPE",          "fields",               fields.floor_inform},
+        [0x0D] = {"FLOOR_STATUS",               "fields",               fields.floor_status},
+        [0x0E] = {"GPRS_TIMER",                 "dec"},
+        [0x0F] = {"GROUP_ADD_INFORMATION",      "mix"},
+        [0x10] = {"GROUP_UID",                  "str"},
+        [0x11] = {"GROUP_DEL_INFORMATION",      "mix"},
+        [0x14] = {"GROUP_LIST",                 "mix"},
+        [0x15] = {"GROUP_MOD_INFORMATION",      "mix"},
+		
+		[0x16] = {"GROUP_NAME",  				"str"},
+		[0x17] = {"GROUP_RESOURCE",				"mix"}, 
+		[0x18] = {"GROUP_RESOURCE_LIST",		"list"}, 
+		[0x19] = {"GROUP_SHORT_NUMBER", 		"str"}, 
+		[0x1A] = {"GROUP_UPDATE_FAIL_LIST", 	"list"},
+		
+        [0x1C] = {"H264_PARAMETER",             "dissector",            video_parameter_dissector},
+        [0x1D] = {"IP_ADDRESS",                 "dissector",            ip_addr_dissector},
+        [0x1E] = {"MESSAGE_CONTAINER",			"str"},
+        [0x1F] = {"MESSAGE_CONTAINER_TYPE",     "fields",               fields.msg_container_type},
+		
+        --[0x20] = {"NETWORK TRUNKING CAPABILITY", "dec"},
+		
+        [0x21] = {"PORT",                       "dec"},
+        [0x22] = {"PRIORITY",                   "dec"},
+        [0x23] = {"RESULT",                     "fields",               fields.result},
+        [0x24] = {"STUN_STATUS",                "fields",               fields.stun_status},
+        [0x25] = {"STUN_TYPE",                  "fields",               fields.stun_type},
+        [0x26] = {"Subscripber_BCD_Number",     "dissector",            bcd_dissector},
+		
+        [0x27] = {"SUBSCRIBER_SHORT_UID",		"str"},
+		
+        [0x28] = {"SUPPORT_AUDIO_CODEC_LIST",   "dissector",            audio_codec_dissector},
+        [0x29] = {"SUPPORT_VIDEO_CODEC_LIST",   "dissector",            video_codec_dissector},
+        [0x2A] = {"TRUNKING_REGISTER_TYPE",     "fields",               fields.register_type},
+        [0x2B] = {"UE_TRUNKING_CAPABILITY",     "dissector",            ue_capability_dissector},
+        [0x2C] = {"UPDATE_TYPE",                "enum",                 {[0x00]="COVERED", [0x01]="NON_COVERED"}},
+        [0x2D] = {"USER_NAME",                  "str"},
+        [0x2E] = {"VIDEO_CODEC_CAPABILITY",     "mix"},
+        [0x2F] = {"VIDEO_DESCRIPTION",          "mix"},
+        [0x30] = {"TRUNK_IP_ADDRESS",           "dissector",            ip_addr_dissector},
+        [0x31] = {"EMERGENCY_GROUP_UID",        "str"},
+		
+        --[0x32] = {"UE TRUNKING", "str"},
+        [0x36] = {"MESSAGE_SQ_NUMBER",          "dissector",            message_sq_number_dissector},
+		
+        [0x37] = {"UE_VERSION",                 "hex"},
+        [0x38] = {"USER_PW_LIMIT_TIME",         "dec"}, 
+        [0x39] = {"HA1",                        "str"},
+        [0x3A] = {"NEW_HA1",                    "str"},
+        [0x3B] = {"H265_PARAMETER",             "dissector",            video_parameter_dissector},
+        [0x3C] = {"ID_CARD",                    "str"},
+        [0x3D] = {"ACTION_ID",                  "str"},
+        [0x3E] = {"REGROUP_INFORMATION",        "mix"},
+        [0x40] = {"CLIENT_VERSION",             "dissector",            version_dissector},
+        [0x41] = {"REGROUP_FLAG",               "enum",                 {[0x00]="CLOSED", [0x01]="OPEN"}},
+        [0x42] = {"GPS_MAP",                    "enum",                 {[0x01]="GOOGLE", [0x02]="GaoDe"}},
+        [0x43] = {"ENCRYPTION_TYPE",            "enum",                 {[0x00]="NONE", [0x01]="HYTERA", [0x02]="DMR"}, [0x04]="GAHARD"},
+        [0x44] = {"ENCRYP_ALGORITHM",           "enum",                 {[0x01]="ARC4", [0x02]="AES128", [0x03]="AES256"}},
+        [0x45] = {"AUDIO_TRAFFIC_MODE",         "fields",               fields.audio_traffic_mode},
+        [0x46] = {"UE_PROPERTY",                "dissector",			ue_property_dissector}, 
+        [0x47] = {"AUDIO_RTP_RES",              "dissector",            server_uri_dissector},
+        [0x48] = {"VIDEO_RTPRES",               "dissector",            server_uri_dissector},
+        [0x49] = {"KEEPLIVE_TIME",              "dec"},
+        [0x4B] = {"LOCATION_TYPE",              "enum",                 {[0x01]="ORIGINAL", [0x02]="GaoDe"}},
+        [0x4C] = {"SUBSCRIBER_UID",             "str"},
+        [0x4D] = {"PNAS_PROTO_VERSION",         "dissector",            version_dissector},
+        [0x4E] = {"PERSON_CONTACT_SWITCH",      "enum",                 {[0x00]="OPEN", [0x01]="CLOSED"}},
+        [0x4F] = {"TERMINAL_CATEGORY",          "enum",                 {[0x01]="Professional", [0x02]="Commercial", [0x10]="Third Party"}},
+        [0x50] = {"TERMINAL_MODEL",             "str"},
+        [0x51] = {"ONLINE_CALL_ID",             "str"},
+        [0x60] = {"CLIENT_FLOOR_SEQ",           "dec"},
+        [0x61] = {"MESSAGE_TIME_STAMP",         "dec"},  -- 64bit
+        [0x62] = {"BUSINESS_ID",                "str"},
+        [0x63] = {"PRES_FRS_HTTP_PORT",         "dec"},
+        [0x64] = {"PRES_FRS_HTTPS_PORT",        "dec"},
+        [0x65] = {"PRESENCE_IP_ADDRESS",        "dissector",            ip_addr_dissector},
+        [0x66] = {"LOG_HTTP_PORT",              "dec"},
+        [0x67] = {"LOG_HTTPS_PORT",             "dec"},
+        [0x68] = {"LOG_IP_ADDRESS",             "dissector",            ip_addr_dissector},
+        [0x69] = {"FRS_HTTP_PORT",              "dec"},
+        [0x70] = {"FRS_HTTPS_PORT",             "dec"},
+        [0x71] = {"FRS_IP_ADDRESS",             "dissector",            ip_addr_dissector},
+        [0x72] = {"PERSON_CONTACT_POLICY",      "enum",                 {[0x01]="Non Private", [0x02]="Organization", [0x03]="Business"}},
+		[0x73] = {"UID_TYPE",      				"str"}, 
+		[0x74] = {"REALM_NAME",					"str"}, 
+		[0x76] = {"REDUNDANCY_SYSTEM_PNAS_MASTER_IP",	"dissector",            ip_addr_dissector},
+		[0x77] = {"REDUNDANCY_SYSTEM_PNAS_MASTER_PORT","dec"}, 
+		[0x78] = {"FLOOR_MEDIA_INDICATOR",		"dissector",			floor_media_indicator_dissector}, 
+		[0x79] = {"REDUNDANCY_SYSTEM_PNAS_SLAVE_IP",	"dissector",			ip_addr_dissector}, 
+		
+		
+		[0x80] = {"REDUNDANCY_SYSTEM_PNAS_SLAVE_PORT",		"dec"}, 
+		
+		--新增
+		[0x81] = {"AMBE_PARAMETER",		        "dissector",                    ambe_parameter_dissector}, 
+		[0x82] = {"NVOC_PARAMETER",		        "dissector",                    nvoc_parameter_dissector}, 
+		[0x83] = {"PDT_SYS_SWITCH",		        "dec"}, 
+		[0x84] = {"KMSLP_ADDRESS",		        "dissector",            ip_addr_dissector}, 
+		[0x85] = {"KMS_HTTPS_PORT",		        "dec"}, 
+		[0x86] = {"ENCRYPT_KEY_OPERATE",		"dec"}, 
+		[0x87] = {"EKEY_VERSION_LIST",	     	"list"}, 
+		[0x88] = {"ENCRPT_SWITCH",		        "dec"}, 
+		[0x89] = {"PRGANIZE_SWITCH",		    "dec"}, 
+		[0x90] = {"EKEY_VERSION",		        "dissector",                    ekey_version_dissector}, 
+		
+		[0x91] = {"SYSTEM_NP",		        	"dissector",                    bcd_dissector}, 
+		[0x92] = {"DATA_CODE_CAPABLILITY",		"dissector",                    data_code_capabliity_dissector}, 
+		[0x93] = {"LMESSAGE_DIVIDE_NUMBER",     "dissector",            		lmessage_divide_number_dissector},
+		[0x94] = {"BUSSINESS_TYPE", 			"enum",                 {[0x01]="To B", [0x02]="To C"}},
+		
+		[0xA0] = {"NOTIFY_TYPE",				"dec"}, 
+		[0xA1] = {"LOG_COMMAND", 				"dec"},
+		[0xA2] = {"LOG_LEVEL_PARAMETER",        "dissector",            log_level_parameter_dissector}, 
+		[0xA3] = {"LOG_PULL_PARAMETER",			"dissector",            log_pull_parameter_dissector}, 
+		[0xA4] = {"ACCESS_TOKEN",				"str"}, 
+		[0xA5] = {"AUTHORIZATION_OLD",          "str"},
+		
+        [0xBC] = {"FILE_NAME",                  "str"},
+        [0xBD] = {"MEDIA_FILE_HASH",            "dissector",            hash_dissector},
+        [0xBE] = {"THUMBNAIL_FILE_HASH",        "dissector",            hash_dissector},
+        [0xBF] = {"FILE_UPLOAD_INFO",           "hex"}, 
+        [0xC0] = {"MESSAGE_LENGTH",             "tv",                   message_length_dissector},
+		[0xC2] = {"AUDIO_CODEC_LIST_PRIORITY",  "dissector",            audio_codec_dissector},
+		[0xC3] = {"VIDEO_CODEC_LIST_PRIORITY",  "dissector",            video_codec_dissector},
+        [0xC4] = {"VIDEO_ATTRIBUTE",            "dissector",            video_attribute_dissector},
+        [0xC5] = {"REGROUP_OPT",                "fields",               fields.regroup_opt},
+        [0xC6] = {"GROUP_INFORMATION",          "mix"},
+        [0xC7] = {"SUBSCRIBER_LIST",            "list"},
+        [0xC8] = {"AUTHENTICATE",               "str"},
+        [0xC9] = {"AUTHORIZATION",              "str"},
+        [0xCA] = {"DEVICE_ID",                  "str"},
+        [0xCB] = {"GROUP_UPDATE_ID",            "hex"},
+        [0xCC] = {"GIS_SERVER",                 "dissector",            server_uri_dissector},
+        [0xCD] = {"STATUS_PARAMETER",           "dissector",            status_parameter_dissector},
+        [0xCE] = {"DMR_AUTHORIZATION_FLAG",     "hex"},
+        [0xCF] = {"CALL_ROLE",                  "fields",               fields.call_role},
+        [0xD0] = {"THUMBNAIL_URL",              "str"},
+        [0xD1] = {"ORIGINAL_URL",               "str"},
+        [0xD2] = {"FILE_SERVER",                "dissector",            server_uri_dissector},
+        [0xD3] = {"AUTH_GRANT_INFORMATION",     "str"},
+        [0xD4] = {"CONTENT_TYPE",               "fields",               fields.content_type},
+        [0xD5] = {"IMSI",                       "str"},
+        [0xD6] = {"ESN_AUTHENTICATION_TYPE",    "enum",                 {[0x00]="PDT/Hytera", [0x01]="MDR"}},
+        [0xD7] = {"GROUP_AFFILIATION_LIST",     "list"},
+        [0xD8] = {"UE_TYPE",                    "enum",                 {[0x00]="PoC", [0x01]="RoIP", [0x02]="B-Trunc"}},
+        [0xD9] = {"CONFIGURATION_REQUEST_TYPE", "hex"},
+        [0xDA] = {"STATUS_MESSAGE_CONFIG_LIST", "list"},
+        [0xDB] = {"STATUS_MESSAGE_CONFIG_ITEM", "dissector",            status_msg_config_dissector},
+        [0xDC] = {"APP_VERSION_SERVER",         "dissector",            server_uri_dissector},
+        [0xDD] = {"CAMERA_TYPE",                "fields",               fields.camera_type},
+        [0xDE] = {"GIS_SERVER_1",               "dissector",            server_uri_dissector},
+        [0xDF] = {"EVS_PARAMETER",              "dissector",            evs_parameter_dissector},
+        [0xE0] = {"METHOD_TYPE",                "enum",                 {[0x00]="Setup", [0x01]="Release", [0x02]="Modify"}},
+        [0xE1] = {"DUPLEX",                     "enum",                 {[0x00]="Half-Duplex", [0x01]="Full-Duplex"}},
+        [0xE2] = {"SESSION_TYPE",               "enum",                 {[0x01]="Video to Voice", [0x02]="Voice to Video"}},
+        [0xE3] = {"SERVICE_BCD_NUMBER",         "dissector",            bcd_dissector},
+        [0xE4] = {"CALL_INDICATION",            "hex"},
+        [0xE5] = {"HEARTBEAT_TYPE",             "fields",               fields.hearbeat_type},
+        -- [0xE6] = "PRESENCE_SERVER",
+        [0xE7] = {"LOG_SERVER",					"dissector",            server_uri_dissector},
+        [0xE8] = {"DEFAULT_PUC_UID",            "str"},
+        [0xE9] = {"DUTY_REPORT_UID",            "str"},
+        [0xEA] = {"EMERGENCY_ALARM_NUMBER",     "str"},
+        [0xEB] = {"DIALING_RULE",               "fields",               fields.dialing_rule},
+        [0xEC] = {"AMR_WB_PARAMETER",           "dissector",            amrwb_parameter_dissector},
+        [0xED] = {"SSRC",                       "hex"},
+        [0xEE] = {"VIDEO_RESOLUTION_RATIO_PRIORITY",    "dissector",    video_resolution_ratio_priority_dissector},
+        [0xEF] = {"REGISTER_SERVICE_TYPE",      "fields",               fields.register_service_type},
+        [0xF0] = {"ESN_AUTHENTICATE",           "mix"},
+        [0xF1] = {"ESN_AUTHORIZATION",          "mix"},
+        [0xF2] = {"ESN",                        "str"},
+        [0xF3] = {"ESN_CHALLENGE",              "str"},
+        [0xF4] = {"ESN_REVERSE",                "str"},
+        [0xF5] = {"ESN_MUTUAL_AUTH_INFO",       "str"},
+        [0xF6] = {"ESN_SYNC_INFO",              "str"},
+        [0xF7] = {"ESN_RESPONSE",               "str"},
+        [0xF8] = {"ESN_MUTUAL_TOKEN",           "str"},
+        [0xF9] = {"ESN_MS_AUTH_CODE",           "str"},
+        [0xFA] = {"ESN_SYNC_RAND",              "str"},
+        [0xFB] = {"ESN_V_BASE_ID",              "str"},
+        [0xFC] = {"DEVICE_MODEL",               "str"},
+        [0xFD] = {"VENDER_CODE",                "hex"},
+        [0xFE] = {"SERIAL_NUMBER",              "str"},
+		
+		
+        [0x100] = {"SYSTEMREALM",               "str"},
+        [0x101] = {"INVITATION_CODE",           "dissector", invitation_code_dissector},
+        [0x102] = {"OPERATOR",                  "str"},
+        [0x103] = {"INVITETIME",                "dec"},
+        [0x104] = {"USERC_UID",                 "str"},
+        [0x105] = {"CTRLAPP_UID",               "str"},
+        [0x106] = {"CTRLAPP_NAME",              "str"},
+        [0x107] = {"QRCODEPATH",                "str"},
+        [0x108] = {"GROUPINFO_LIST",            "list"},
+        [0x109] = {"GROUP_MEMBER_LIST",         "list"},
+        [0x10A] = {"HEARBEAT DATA",             "dissector", hearbeat_dissector},
+		
+		--新增 Police ID
+		[0x0110] = {"Police ID",             "str"},
+    }
+
+	--CipherIdStru128E2eKey[] = {0x11,0x12,0x13}
+
+	local pnas_e2e_type_array = {
+		[0x00] = "NULL_ALGORITHM",
+		[0x01] = "AES128_ALGORITHM",
+		[0x02] = "AES192_ALGORITHM",
+		[0x03] = "AES256_ALGORITHM",
+		[0x04] = "DES_ALGORITHM",
+		[0x05] = "TDES_ALGORITHM",
+		[0x06] = "RC4_ALGORITHM"
+	}
+	
+	fields.PnasIsE2e = ProtoField.bool(proto_name .. ".PnasIsE2e", "PNAS_IS_E2E", 8, nil, 0x80)
+	fields.PnasE2eAlgorithm = ProtoField.uint8(proto_name .. ".PnasE2eAlgorithm", "PNAS_E2E_ALGORITHM", base.HEX, pnas_e2e_type_array, 0x0F)
+	fields.PnasE2eKeyId = ProtoField.uint8(proto_name .. ".PnasE2eKeyId", "PNAS_E2E_KEY_ID", base.HEX, nil, 0xFF)
+	
+	local function pnas_e2e_process(buf, root)
+		local var1 = buf(2, 1)
+		root:add(fields.PnasIsE2e, var1)
+		root:add(fields.PnasE2eAlgorithm, var1)
+		
+		local var2 = buf(3, 1)
+		root:add(fields.PnasE2eKeyId, var2)
+		
+		local CipherType = var1:uint() - 0x80
+		local CryptId = var2:uint()
+		return CipherType, CryptId
+	end
+	
+
+    local function get_ie_variable_name(s)
+        return s:lower():gsub(' ', '_')
+    end
+
+    local function get_ie_names(ies)
+        local names = {}
+        local ie_variable = ""
+        for i, v in pairs(ies) do
+            names[i] = v[1]
+            ie_variable = get_ie_variable_name(v[1])
+            -- 动态构建 enum 结构
+            if (v[2] == "enum") then
+                fields[ie_variable] = ProtoField.uint8(proto_name .. "." .. ie_variable, v[1], base.HEX, v[3])
+            end
+        end
+        return names
+    end
+	
+------------------
+	function split( str,reps )
+		local resultStrList = {}
+		string.gsub(str,'[^'..reps..']+', function ( w )
+			table.insert(resultStrList, tonumber(w))
+		end)
+		
+		return resultStrList
+	end
+	
+	function tabBufNum(tab, offset, length)
+		local number = 0
+		for i = 0, length - 1 do
+			number = tab[offset + i] * (256^(length - i - 1)) + number
+		end
+
+		return number
+	end
+	
+	function tabBufStr(tab, offset, length, subtree)
+		local str = string.char(tab[offset])
+		for i = 1, length - 1 do
+			str = str..string.char(tab[offset + i])
+		end
+
+		return str
+	end
+	
+	function tabBufIpv4(tab, offset, length, subtree)
+		local str = tostring(tab[offset])
+		for i = 1, length - 1 do
+			str = str.."."..tostring(tab[offset + i])
+		end
+
+		return str
+	end
+	
+	function tabBufIpv6(tab, offset, length, subtree)
+		local str = tostring(tab[offset])
+		for i = 1, length - 1 do
+			str = str..":"..tostring(tab[offset + i])
+		end
+
+		return str
+	end
+-----------------
+
+    -- 对IE结构表进行初始化
+    local ie_name_array = get_ie_names(ie_array)
+    fields.ie_type      = ProtoField.uint16(proto_name .. ".ie_type", "Type", base.HEX, ie_name_array)
+
+    -- common function for protocol
+
+    local function get_ie_length(buf)
+        local buf_len = buf:len()
+        if (buf_len < 2) then
+            return nil
+        end
+        local iei = buf(0, 2):uint()
+        if (iei == 0xc0) then
+            -- Message Length static length
+            return 5
+        elseif (buf_len < 4) then
+            return nil
+        else
+            local len = buf(2, 2):uint() + 4
+            if (len <= buf_len) then
+                return len
+            else
+                return nil
+            end
+        end
+    end
+	
+	local function get_e2e_ie_length(tab, offset)
+		local tab_len = #tab - offset
+        local iei = tabBufNum(tab, offset, 2)
+        if (iei == 0xc0) then
+            -- Message Length static length
+            return 5
+        elseif (tab_len < 4) then
+            return nil
+        else
+            local len = tabBufNum(tab, offset + 2, 2) + 4
+            if (len <= tab_len + 1) then
+                return len
+            else
+                return nil
+            end
+        end
+    end
+
+    -- This function name MUST be unique across all .lua files
+    local function pnaskcp_ie_dissector(buf, pkt, tree, index, parent_iei, parent_tree)
+        -- index, parent_iei, parent_tree只在list子节点使用
+        local ie_len = get_ie_length(buf)
+        if (ie_len == nil) then
+            return 0
+        end
+        local offset = 0
+        local iei = buf(offset, 2):uint()
+        local ie = ie_array[iei]
+        local root = tree
+        if (index ~= nil and iei ~= parent_iei and parent_tree ~= nil) then
+            root = parent_tree
+        end
+        local ie_name = ""
+
+        if (ie == nil) then
+            ie_name = "[WARNING] UNKNOWN IE"
+        else
+            ie_name = ie[1]
+            if (index ~= nil) then
+                if (iei == parent_iei) then
+                    ie_name = string.format("%s[%d]", ie_name, index)
+                    index = index + 1
+                else
+                    index = nil
+                    parent_iei = nil
+                end
+            end
+        end
+        local ie_tree = root:add(proto_obj, buf(offset, ie_len), ie_name)
+
+        ie_tree:add(fields.ie_type, buf(offset, 2))
+        offset = offset + 2
+        local var_len = ie_len - 4
+        if (ie ~= nil and ie[2] == 'tv') then
+            var_len = ie_len - 2
+            ie[3](buf(offset, var_len), ie_tree, var_len)
+            return ie_len
+        end
+		
+		--var_len = buf(offset, 2):uint()
+        ie_tree:add(fields.ie_length, buf(offset, 2))
+        offset = offset + 2
+
+        if (ie == nil) then
+            if (var_len > 0) then
+                data_dis:call(buf(offset, var_len):tvb(), pkt, ie_tree)
+            end
+            return ie_len
+        elseif (var_len == 0) then
+            return ie_len
+        end
+        
+        local ie_variable = ""
+        local sub_len = 0
+
+        if (ie[2] == "hex") then
+            ie_variable = string.format("ie_value_hex%d", var_len * 8)
+            if(fields[ie_variable] == nil) then
+                data_dis:call(buf(offset, var_len):tvb(), pkt, ie_tree)
+            else
+                ie_tree:add(fields[ie_variable], buf(offset, var_len))
+            end
+        elseif (ie[2] == "dec") then
+            ie_variable = string.format("ie_value_dec%d", var_len * 8)
+			if (var_len == 8) then 
+				ie_tree:add(fields.ie_value_dec64, tostring(buf(offset, var_len):uint64()))
+            elseif(fields[ie_variable] == nil) then
+                data_dis:call(buf(offset, var_len):tvb(), pkt, ie_tree)
+            else
+                ie_tree:add(fields[ie_variable], buf(offset, var_len))
+            end
+		elseif (ie[2] == "callid") then
+            ie_tree:add(fields.ie_value_dec32, buf(offset, 4))
+        elseif (ie[2] == "fields") then
+            ie_tree:add(ie[3], buf(offset, var_len))
+        elseif (ie[2] == "str") then
+            ie_tree:add(fields.ie_value_str, buf(offset, var_len))
+        elseif (ie[2] == "enum") then
+            ie_variable = get_ie_variable_name(ie_name)
+            ie_tree:add(fields[ie_variable], buf(offset, var_len))
+        elseif (ie[2] == "dissector") then
+            ie[3](buf(offset, var_len):tvb(), ie_tree, var_len)
+        elseif (ie[2] == "mix") then
+            while (offset < var_len) do
+                sub_len = buf(offset+2, 2):uint() + 4
+                pnaskcp_ie_dissector(buf(offset, sub_len), pkt, ie_tree)
+                offset = offset + sub_len
+            end
+        elseif (ie[2] == "list") then
+            local sub_iei = buf(offset, 2):uint()
+            local sub_index = 0
+            while (offset < var_len) do
+                sub_len = buf(offset+2, 2):uint() + 4
+                pnaskcp_ie_dissector(buf(offset, sub_len), pkt, ie_tree, sub_index, sub_iei, tree)
+                offset = offset + sub_len
+                sub_index = sub_index + 1
+            end
+        end
+
+        return ie_len
+    end
+	    --set protocol information
+    local function set_protocol_info(pkt, str)
+        -- show protocol name
+        pkt.cols.protocol = proto_obj.name
+		local old_str = tostring(pkt.cols.info)
+		-- show in info
+		pkt.cols.info:set(old_str..":".."Pnas"..proto_version.."(" .. str .. ")") 
+		--pkt.cols.info:set("Pnas(" .. str .. ")") 
+    end
+---------------------------------------------------------------------------------------------
+ local function pnaskcp_e2e_ie_dissector(buf, tab, offset, pkt, tree, index, parent_iei, parent_tree)
+        -- index, parent_iei, parent_tree只在list子节点使用
+        local ie_len = get_e2e_ie_length(tab, offset)
+        if (ie_len == nil) then
+            return 0
+        end
+        local iei = tabBufNum(tab, offset, 2)
+        local ie = ie_array[iei]
+        local root = tree
+		local e2e_flage = 1
+        if (index ~= nil and iei ~= parent_iei and parent_tree ~= nil) then
+            root = parent_tree
+        end
+        local ie_name = ""
+
+        if (ie == nil) then
+            ie_name = "[WARNING] UNKNOWN IE"
+        else
+            ie_name = ie[1]
+            if (index ~= nil) then
+                if (iei == parent_iei) then
+                    ie_name = string.format("%s[%d]", ie_name, index)
+                    index = index + 1
+                else
+                    index = nil
+                    parent_iei = nil
+                end
+            end
+        end
+        local ie_tree = root:add(proto_obj, buf(0), ie_name)
+
+        ie_tree:add(fields.ie_type, tabBufNum(tab, offset, 2))
+        offset = offset + 2
+        local var_len = ie_len - 4
+        if (ie ~= nil and ie[2] == 'tv') then
+            var_len = ie_len - 2
+            ie[3](buf(0), ie_tree, var_len, tab, offset)
+            return ie_len
+        end
+		
+		--var_len = buf(offset, 2):uint()
+        ie_tree:add(fields.ie_length, tabBufNum(tab, offset, 2))
+        offset = offset + 2
+
+        if (ie == nil) then
+            if (var_len > 0) then
+                data_dis:call(buf(0), pkt, ie_tree)
+            end
+            return ie_len
+        elseif (var_len == 0) then
+            return ie_len
+        end
+        
+        local ie_variable = ""
+        local sub_len = 0
+
+        if (ie[2] == "hex") then
+            ie_variable = string.format("ie_value_hex%d", var_len * 8)
+            if(fields[ie_variable] == nil) then
+                data_dis:call(buf(0), pkt, ie_tree)
+            else
+                ie_tree:add(fields[ie_variable], tabBufNum(tab, offset, var_len))
+            end
+        elseif (ie[2] == "dec") then
+            ie_variable = string.format("ie_value_dec%d", var_len * 8)
+			if (var_len == 8) then 
+				ie_tree:add(fields.ie_value_dec64, tostring(tabBufNum(tab, offset, 8)))
+            elseif(fields[ie_variable] == nil) then
+                data_dis:call(buf(0), pkt, ie_tree)
+            else
+                ie_tree:add(fields[ie_variable], tabBufNum(tab, offset, var_len))
+            end
+		elseif (ie[2] == "callid") then
+            ie_tree:add(fields.ie_value_dec32, tabBufNum(tab, offset, 4))
+        elseif (ie[2] == "fields") then
+            ie_tree:add(ie[3], tabBufNum(tab, offset, var_len))
+        elseif (ie[2] == "str") then
+            ie_tree:add(fields.ie_value_str, tabBufStr(tab, offset, var_len))
+        elseif (ie[2] == "enum") then
+            ie_variable = get_ie_variable_name(ie_name)
+            ie_tree:add(fields[ie_variable], tabBufNum(tab, offset, var_len))
+        elseif (ie[2] == "dissector") then
+            ie[3](buf(0), ie_tree, var_len, tab, offset)
+        elseif (ie[2] == "mix") then
+			local len = var_len + offset
+            while (offset < len) do
+                sub_len = tabBufNum(tab, offset + 2, 2) + 4
+				pnaskcp_e2e_ie_dissector(buf(0), tab, offset, pkt, ie_tree)
+                offset = offset + sub_len
+            end
+        elseif (ie[2] == "list") then
+            local sub_iei = tabBufNum(tab, offset, 2)
+			--ie_tree:add(fields.debug_number, sub_iei)
+            local sub_index = 0
+			local len = var_len + offset
+            while (offset < len) do
+                sub_len = tabBufNum(tab, offset + 2, 2) + 4
+                pnaskcp_e2e_ie_dissector(buf(0), tab, offset, pkt, ie_tree, sub_index, sub_iei, tree)
+                offset = offset + sub_len
+                sub_index = sub_index + 1
+            end
+        end
+		
+        return ie_len
+    end
+	
+	local function proton_pnas_dissector(buf, pkt, tree)
+        -- PNAS header
+        local buf_len = buf:len()
+        local subtree = tree:add(proto_obj, buf(0, buf_len))
+        local offset = 0
+
+        subtree:add(fields.spare, buf(offset, 1))
+        subtree:add(fields.discriminator, buf(offset,1))
+        offset = offset + 1
+		subtree:add(fields.messageSeqid, buf(offset,4))
+		offset = offset + 4
+        subtree:add(fields.procedure_transaction_id, buf(offset, 4))
+        offset = offset + 4
+        subtree:add(fields.message_type, buf(offset, 1))
+        -- set protocol information
+        local pnas_msg_type = message_type_array[buf(offset, 1):uint()]
+        offset = offset + 1
+
+        if nil == pnas_msg_type then
+            pnas_msg_type = "UNKNOWN"
+            set_protocol_info(pkt, pnas_msg_type)
+            data_dis:call(buf(offset):tvb(), pkt, subtree)
+        else
+            set_protocol_info(pkt, pnas_msg_type)
+
+            local ie_tree = subtree:add(proto_obj, buf(offset), pnas_msg_type)
+            while (offset < buf_len)
+            do
+                -- create new buf range for avp
+                local sub_len = get_ie_length(buf(offset):tvb())
+                if (sub_len ~= nil) then
+                    pnaskcp_ie_dissector(buf(offset, sub_len), pkt, ie_tree)
+                    offset = offset + sub_len
+                else
+                    break
+                end
+            end
+        end
+		
+    end
+	
+--------------------------------------------------------------------------------------
+
+    local function proton_e2e_pnas_dissector(buf, tab, pkt, tree, decedData)
+        -- PNAS header
+        local buf_len = buf:len()
+		local tab_len = #tab
+        local subtree = tree:add(proto_obj, buf(0, buf_len))
+        local offset = 1
+		
+		--subtree:add(fields.debug_string, decedData[1])
+		local array_length = tab_len
+		local group_size = 16
+		for i = 1, array_length, group_size do
+		local group = {}
+			for j = i, math.min(i + group_size - 1, array_length) do
+				local hex_num = tonumber(tab[j], 16)
+				--table.insert(group, tab[j])
+				table.insert(group, string.format("%02x", tab[j]))
+			end
+		--subtree:set_text("Private NAS Protocol(Decrypted Data ) : " .. table.concat(group, " "))
+		local title = string.format("Private NAS Protocol(Decrypted Data) [%d - %d]", i, i + 15)
+		--subtree:add("Private NAS Protocol(Decrypted Data ) : ", table.concat(group, " "))
+		subtree:add(title, table.concat(group, " "))
+		end
+
+        subtree:add(fields.spare, tabBufNum(tab, offset, 1))
+        subtree:add(fields.discriminator, tabBufNum(tab, offset, 1))
+        offset = offset + 1
+		subtree:add(fields.messageSeqid, tabBufNum(tab, offset, 4))
+		offset = offset + 4
+        subtree:add(fields.procedure_transaction_id, tabBufNum(tab, offset, 4))
+        offset = offset + 4
+        subtree:add(fields.message_type, tabBufNum(tab, offset, 1))
+        -- set protocol information
+        local pnas_msg_type = message_type_array[tabBufNum(tab, offset, 1)]
+        offset = offset + 1
+	
+        if nil == pnas_msg_type then
+            pnas_msg_type = "UNKNOWN"
+            set_protocol_info(pkt, pnas_msg_type)
+            data_dis:call(buf(0), pkt, subtree)
+        else
+            set_protocol_info(pkt, pnas_msg_type)
+
+            local ie_tree = subtree:add(proto_obj, buf(0), pnas_msg_type)
+            while (offset < tab_len)
+            do
+                -- create new buf range for avp
+                local sub_len = get_e2e_ie_length(tab, offset)
+				--subtree:add(fields.debug_len, sub_len)
+                if (sub_len ~= nil) then
+                    pnaskcp_e2e_ie_dissector(buf(0), tab, offset, pkt, ie_tree)
+                    offset = offset + sub_len
+					--subtree:add(fields.offset, offset)
+                else
+                    break
+                end
+            end
+        end
+		
+    end
+    
+    local function heartbeat_dissector(buf, pkt, tree)
+        local offset = 0
+        local subtree = tree:add(proto_obj, buf(0, 8), 'HEARTBEAT')
+        set_protocol_info(pkt, "LMMH HEARTBEAT")
+
+        -- set message id
+        subtree:add(fields.heartbeat_id, buf(offset, 2))
+        offset = offset + 2
+
+        -- set message type
+        subtree:add(fields.heartbeat_type, buf(offset, 2))
+        offset = offset + 2
+
+        -- set timestamp
+        subtree:add(fields.heartbeat_timestamp, buf(offset, 4))
+        offset = offset + 4
+        return offset
+    end
+
+
+	local inDataBytes = {}
+	local outDataBytes = {}
+
+    local function proto_lmmh_dissector(buf, pkt, tree)       
+		local offset = 0
+		local buf_len = buf:len()
+		local version =buf(offset +5,1):uint()
+        local opt = buf(offset + 6, 1):uint()
+        local lmmh_len = 0
+		local CipherType = 0
+		local CryptId = 0
+		
+		if (version==0x1) then
+			lmmh_len = 24 + opt * 4	
+		elseif (version==0x2) then
+			lmmh_len = 8 + opt * 4
+		else
+			return
+		end
+		
+		local data_len = buf_len - lmmh_len
+		
+        -- PNAS header
+        local subtree = tree:add(proto_obj, buf(offset, lmmh_len), "LMMH")
+
+        subtree:add(fields.magic, buf(offset, 4))
+        offset = offset + 4
+        subtree:add(fields.priority, buf(offset, 1))
+        offset = offset + 1
+        subtree:add(fields.lmmh_version, buf(offset, 1))
+        offset = offset + 1
+        subtree:add(fields.options, buf(offset, 1))
+        offset = offset + 1
+        subtree:add(fields.type, buf(offset, 1))
+        local msg_type = buf(offset, 1):uint()
+        offset = offset + 1
+		if (version == 0x1)then
+		    subtree:add(fields.length, buf(offset, 2))
+			local data_len = buf(offset, 2):uint()
+			offset = offset + 2
+			subtree:add(fields.checksum, buf(offset, 2))
+			offset = offset + 2
+			--skip reserved 32bits
+			offset = offset + 4
+			subtree:add(fields.appid, buf(offset, 8))
+			offset = offset + 8
+		end
+
+        --Options  
+		if (opt == 1)then
+		--EKEY
+			CipherType, CryptId = pnas_e2e_process(buf(offset, 4), subtree)
+			--subtree:add(fields.debug_number, CipherType)
+			--subtree:add(fields.debug_number, CryptId)
+		end
+        offset = offset + opt * 4
+
+        if (msg_type == 0x00) then
+            heartbeat_dissector(buf(offset):tvb(), pkt, tree)
+        elseif (opt == 1)then --e2e信令解密
+			local datalen = buf(offset):tvb():len()
+			
+			for i = 0, datalen - 1 do 
+				inDataBytes[i] = buf(offset + i, 1):uint()
+			end
+			local inData = inDataBytes[0]
+			for i = 1, datalen - 1 do 
+				inData = inData..","..inDataBytes[i]
+			end
+			--load dll
+			local pfPnasDeCipher = require("PnasDeCipher")
+			local outData = pfPnasDeCipher.myPnasDeCipher(CipherType, CryptId, inData)
+			--subtree:add(fields.debug_string, outData)
+			--subtree:set_text("Decrypted Data: " .. outData)
+			outDataBytes = split(outData, ',')
+            --proton_e2e_pnas_dissector(buf(offset):tvb(), outDataBytes, pkt, tree)
+			proton_e2e_pnas_dissector(buf(offset):tvb(), outDataBytes, pkt, tree, outData)
+		else
+		--[[
+			local datalen = buf(offset):tvb():len()
+			
+			subtree:add(fields.debug_number, datalen)
+			for i = 0, datalen - 1 do 
+				inDataBytes[i] = buf(offset + i, 1):uint()
+			end
+			local inData = inDataBytes[0]
+			for i = 1, datalen - 1 do 
+				inData = inData..","..inDataBytes[i]
+			end
+			subtree:add(fields.debug_string, inData)
+		]]--
+			proton_pnas_dissector(buf(offset):tvb(), pkt, tree)
+        end
+        offset = offset + data_len
+        return offset
+    end
+
+
+    local function proto_minlmmh_dissector(buf, pkt, tree)       
+		local offset = 0
+		local buf_len = buf:len()
+		local opt = buf(offset, 1):uint()
+        local lmmh_len = 1 + opt * 4	
+		
+		local CipherType = 0
+		local CryptId = 0
+		
+		local data_len = buf_len - lmmh_len
+		
+        -- PNAS header
+        local subtree = tree:add(proto_obj, buf(offset, lmmh_len), "MIN_LMMH_V1")
+
+		opt = buf(offset, 1):le_uint()
+        subtree:add(fields.options, buf(offset, 1))
+        offset = offset + 1
+		
+        --Options
+		if (opt ~= 0)then		
+			if (opt == 1)then
+				subtree:add(fields.option1, buf(offset, 4))
+			--EKEY
+				CipherType, CryptId = pnas_e2e_process(buf(offset, 4), subtree)
+				--subtree:add(fields.debug_number, CipherType)
+				--subtree:add(fields.debug_number, CryptId)
+				offset = offset + 4
+			elseif (opt == 1)then
+				subtree:add(fields.option2, buf(offset, 4))
+				offset = offset + 4
+			elseif (opt == 1)then
+				subtree:add(fields.option3, buf(offset, 4))
+				offset = offset + 4
+			elseif (opt == 1)then
+				subtree:add(fields.option4, buf(offset, 4))
+				offset = offset + 4
+			end
+		end
+
+		if (opt == 1)then 
+			--e2e信令解密
+			local datalen = buf(offset):tvb():len()
+			
+			for i = 0, datalen - 1 do 
+				inDataBytes[i] = buf(offset + i, 1):uint()
+			end
+			local inData = inDataBytes[0]
+			for i = 1, datalen - 1 do 
+				inData = inData..","..inDataBytes[i]
+			end
+			--load dll
+			local pfPnasDeCipher = require("PnasDeCipher")
+			local outData = pfPnasDeCipher.myPnasDeCipher(CipherType, CryptId, inData)
+			--subtree:add(fields.debug_string, outData)
+			outDataBytes = split(outData, ',')
+            proton_e2e_pnas_dissector(buf(offset):tvb(), outDataBytes, pkt, tree, outData)
+		else
+		--[[
+			local datalen = buf(offset):tvb():len()
+			
+			subtree:add(fields.debug_number, datalen)
+			for i = 0, datalen - 1 do 
+				inDataBytes[i] = buf(offset + i, 1):uint()
+			end
+			local inData = inDataBytes[0]
+			for i = 1, datalen - 1 do 
+				inData = inData..","..inDataBytes[i]
+			end
+			subtree:add(fields.debug_string, inData)
+		]]--
+			proton_pnas_dissector(buf(offset):tvb(), pkt, tree)
+        end
+        offset = offset + data_len
+        return offset
+    end
+
+
+    -- main entrance of dissector function
+    -- desegment_len: Estimated number of additional bytes required for completing the PDU
+    -- desegment_offset: Offset in the tvbuff at which the dissector will continue processing when next called.
+    local function proto_kcp_dissector(buf, pkt, tree)
+        local buf_len = buf:len()
+        --local offset = pkt.desegment_offset or 0
+        local offset = 0
+		local cnt = 0
+		local kcptype = 0
+		
+        pkt.cols.protocol = "KCP"
+        pkt.cols.info = ""
+		
+        while true do
+            local data_size = buf_len - offset
+
+            if data_size < 36 then
+                -- KCP头最少有36字节，不够取消
+                return
+            end
+            
+			local old_str = tostring(pkt.cols.info)
+			if old_str ~= "" then old_str = old_str .. ";" end
+			old_str = old_str .." " .. "sn="..buf(offset + 20, 4):le_uint().." "
+			local cmd_type = cmd_types[buf(offset + 12, 1):le_uint()]
+			old_str = old_str .. "" .. cmd_type
+			pkt.cols.info = old_str
+			
+			local kcpversion = buf(offset +28, 2):le_uint()
+			local kcp_len = 0
+			
+			local conv = tostring(buf(8, 4):le_uint()) 
+				  conv = "conversation: "..conv.."("..string.format("0x%08x", conv)..")"
+            -- kcp header
+			if (kcpversion == 0)then
+				if data_size < 40 then 
+					return
+				end 
+				kcp_len = 40 
+			else
+				kcp_len = 36
+			end
+            local subtree = tree:add(proto_obj, buf(offset, kcp_len), "KCP")
+		
+			subtree:add_le(fields.appid, buf(offset, 8))
+			offset = offset + 8
+            subtree:add_le(buf(offset, 4), conv)
+            offset = offset + 4
+            subtree:add_le(fields.cmd, buf(offset, 1))
+            offset = offset + 1
+            subtree:add_le(fields.frg, buf(offset, 1))
+            offset = offset + 1
+            subtree:add_le(fields.wnd, buf(offset, 2))
+            offset = offset + 2
+            subtree:add_le(fields.ts, buf(offset, 4))
+            offset = offset + 4
+            subtree:add_le(fields.sn, buf(offset, 4))
+            offset = offset + 4
+            subtree:add_le(fields.una, buf(offset, 4))
+            offset = offset + 4
+			----------------------------------
+			subtree:add_le(fields.kcpversion, buf(offset, 2))
+            offset = offset + 2
+			------------------------------------
+			if (kcpversion == 2)then
+				proto_version = "3.2"
+				kcptype = buf(offset, 1):le_uint()
+				--subtree:add(fields.debug_number, kcptype)
+				subtree:add(fields.kcptype, buf(offset, 1))
+				offset = offset + 1				
+				--subtree:add(fields.reserved, buf(offset, 2))
+				subtree:add(fields.reserved, buf(offset, 1))
+				offset = offset + 1
+			else
+				proto_version = "3.1"
+				subtree:add_le(fields.reserved, buf(offset, 2))
+				offset = offset + 2
+				
+				if (kcpversion == 0)then
+					proto_version = "3.0"
+					--reserved 预留
+					subtree:add_le(fields.reserved2, buf(offset, 4))
+					offset = offset + 4
+				end
+			end
+			
+			
+            local data_len = buf(offset, 4):le_int()
+            subtree:add_le(fields.len, buf(offset, 4))
+            offset = offset + 4
+
+            if(data_len ~= 0) then
+                cnt = cnt + 1
+				if ((kcpversion == 2)and(kcptype == 1))then
+					offset = offset + proto_minlmmh_dissector(buf(offset, data_len):tvb(), pkt, tree)
+				else
+					offset = offset + proto_lmmh_dissector(buf(offset, data_len):tvb(), pkt, tree)
+				end
+            end
+        end
+        if cnt > 1 then
+            set_protocol_info(pkt, "--MULTIPLE_PNAS_MESSAGES--")
+        end
+    end
+
+    -- define dissector function
+    proto_obj.dissector = proto_kcp_dissector
+
+    --register this dissector   add Packet Details
+    DissectorTable.get("udp.port"):add(proto_port, proto_obj)
+
+    --[[3.0&3.1KCP报文结构
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           	                                |
+	+						    appid 						        +
+    |                           	                                |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           conv                                |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |     cmd       |     frg       |           wnd                 | 
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           ts                                  |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           sn                                  |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           una                                 |
+	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |        		version       	|               reserve         |
+	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |             				reserve2        					|
+	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           len                                 |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           date                                |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	
+
+	总计 40
+	appid 64bit
+    conv 32bit 为一个表示会话编号的整数,和TCP的 conv一样,通信双方需保证 conv相同,相互的数据包才能够被接受。conv唯一标识一个会话,但通信双方可以同时存在多个会话
+    cmd  8bit  用来区分分片的作用。IKCP_CMD_PUSH：数据分片；IKCP_CMD_ACK：ack分片； IKCP_CMD_WASK：请求告知窗口大小；IKCP_CMD_WINS：告知窗口大小。
+    frg  8bit  用户数据可能会被分成多个KCP包发送,frag标识segment分片ID（在message中的索引,由大到小,0表示最后一个分片）。
+    wnd  16bit 剩余接收窗口大小（接收窗口大小-接收队列大小）,发送方的发送窗口不能超过接收方给出的数值。
+    ts   32bit message发送时刻的时间戳
+    sn   32bit message分片segment的序号,按1累次递增。
+    una  32bit 待接收消息序号(接收滑动窗口左端)。对于未丢包的网络来说,una是下一个可接收的序号,如收到sn=10的包,una为11。
+	version 16bit 
+	reserved 16bit
+	reserved2 32bit
+    len  32bit 数据长度。
+		version等于0时保留reserved2，version等于1时没有reserved2
+    --]] 
+
+    --[[3.2KCP报文结构
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           	                                |
+	+						    appid 						        +
+    |                           	                                |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           conv                                |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |     cmd       |     frg       |           wnd                 | 
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           ts                                  |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           sn                                  |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           una                                 |
+	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |        		kcpversion    	|  type |      reserve          |
+	+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           len                                 |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           date                                |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	
+
+	总计 36
+	appid 64bit
+    conv 32bit 为一个表示会话编号的整数,和TCP的 conv一样,通信双方需保证 conv相同,相互的数据包才能够被接受。conv唯一标识一个会话,但通信双方可以同时存在多个会话
+    cmd  8bit  用来区分分片的作用。IKCP_CMD_PUSH：数据分片；IKCP_CMD_ACK：ack分片； IKCP_CMD_WASK：请求告知窗口大小；IKCP_CMD_WINS：告知窗口大小。
+    frg  8bit  用户数据可能会被分成多个KCP包发送,frag标识segment分片ID（在message中的索引,由大到小,0表示最后一个分片）。
+    wnd  16bit 剩余接收窗口大小（接收窗口大小-接收队列大小）,发送方的发送窗口不能超过接收方给出的数值。
+    ts   32bit message发送时刻的时间戳
+    sn   32bit message分片segment的序号,按1累次递增。
+    una  32bit 待接收消息序号(接收滑动窗口左端)。对于未丢包的网络来说,una是下一个可接收的序号,如收到sn=10的包,una为11。
+	kcpversion 16bit kcp协议版本号（3.2版本为2）
+	type 4bit  kcp 下一层数据负载类型，0表示普通lmmh结构，1表示极简lmmh结构 mimimalism lmmh
+	reserved 12bit 预留
+    len  32bit 数据长度。
+    --]] 
+
+
+    --[[ LMMH消息结构
+    Options：1字节,可扩展的头部选项,该项表示后面可动态增加的Option选项个数（每个Option都是4字节）,
+    当该字节的值为0时,消息头只有固定大小头（24）,当该字节的值为1时,消息头的大小为固定大小（24）+Option大小（1*4）
+    Type：1字节,消息类型,0-心跳,1-PNAS
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           Magic Number                        |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |   Priority    |     Version   |    Options    |      Type     | 
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |              Length           |              Checksum         |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           Reserved                            |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   
+    |                            APP ID      part1                  |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                            APP ID      part2                  |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                            Option 1                           |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                            Option 2                           |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                            Option 3                           |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                            Option 4                           |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                             Data                              |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	version等于1时保留 Length  Checksum Reserved  APP ID 
+	version等于2时无	Length  Checksum Reserved  APP ID 
+	--]]
+	
+	--[[MINIMALISM LMMH V1消息结构
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |   Options     |                   Option1                     | 
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |   Option1     |                   Option2                     | 
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	|   Option2     |                   Option3                     | 
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	|   Option3     |                   Option4                     | 
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	|   Option4     |                    Data                       | 
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	options 8bit 根据options的值确定后面动态增加的option数量
+	option 32bit 可动态增加参数
+	--]]
+	
+    --[[ PNAS结构
+    0       1        2        3        4        5        6        7 
+    +-+++++++-++++++++-++++++++-++++++++-++++++++-++++++++-++++++++-+
+    |             spare            |     Protocol Discriminator     |
+	+-+++++++-++++++++-++++++++-++++++++-++++++++-++++++++-++++++++-+
+    |     					MESSAGE SEQ ID                 			|
+    +-+++++++-++++++++-++++++++-++++++++-++++++++-++++++++-++++++++-+
+    |     Trunking Proceduce transaction identity                   |
+    +-+++++++-++++++++-++++++++-++++++++-++++++++-++++++++-++++++++-+
+    |                         Message Type                          |
+    +-+++++++-++++++++-++++++++-++++++++-++++++++-++++++++-++++++++-+
+    |                           Ies                                 |
+    +-+++++++-++++++++-++++++++-++++++++-++++++++-++++++++-++++++++-+
+
+
+    -- TLV
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |      Message Length IEI       |       Value length            |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    | Dynamic Value |                                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    --]]
+end
